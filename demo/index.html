@@ -1,0 +1,214 @@
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>OaaS — Optimization as a Service | Pivotol AI</title><meta name="description" content="On-premise energy optimization for industrial facilities. Deploy controlled infrastructure to reduce measurable energy waste with verified P&amp;L tracking."><link rel="modulepreload" href="/assets/main-gn3v9nf9.js"><link rel="modulepreload" href="/assets/demo-cgnqfk7e.js"><link rel="modulepreload" href="/assets/cpu-mso4ymym.js"><link rel="icon" href="/favicon.ico"><link rel="stylesheet" href="/assets/main-d0mqynus.css" type="text/css"></head><body><script>
+(function(){
+  try {
+    var t = localStorage.getItem('theme');
+    if (t === 'dark') document.documentElement.classList.add('dark');
+  } catch(e) {}
+})();
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var fileInput = document.querySelector('input[type="file"]');
+  var browseBtn = document.querySelectorAll('button')[0];
+  var resetBtn = document.querySelectorAll('button')[1];
+  var statusTitle = document.querySelector('.font-display.text-lg.font-bold');
+  var statusDesc = statusTitle.nextElementSibling;
+
+  // All workflow boxes and connectors
+  var workflowSection = document.querySelector('.mt-12.overflow-x-auto');
+  var topRow = workflowSection.querySelector('.flex.flex-col.items-start');
+  var boxes = workflowSection.querySelectorAll('.relative.flex.flex-col.items-center');
+  var arrows = workflowSection.querySelectorAll('.hidden.items-center.md\\:flex');
+  var modelBox = workflowSection.querySelector('.flex.flex-col.items-center.justify-center');
+  var deliverables = document.querySelectorAll('.grid.grid-cols-2 > div');
+
+  var steps = ['file-selected','uploading','processing','parsing','analysing','building','qa','complete'];
+  var stepIndex = { 'idle': -1 };
+  steps.forEach(function(s, i) { stepIndex[s] = i; });
+
+  // Box order: File Browse(0), File Upload(1), Processing(2), Parsing(3), Analysing(4), Building Content(5), QA/QC(6), Agent Validation(7)
+  var boxStepMap = ['file-selected','uploading','processing','parsing','analysing','building','qa','qa'];
+
+  function atLeast(current, target) {
+    return (stepIndex[current] || -1) >= (stepIndex[target] || -1);
+  }
+  function past(current, target) {
+    return (stepIndex[current] || -1) > (stepIndex[target] || -1);
+  }
+
+  function setBoxState(box, active, complete, pulsing) {
+    var icon = box.querySelector('div');
+    var label = box.querySelector('span');
+    // Remove old check mark if any
+    var oldCheck = box.querySelector('.checkmark-icon');
+    if (oldCheck) oldCheck.remove();
+
+    if (complete) {
+      box.className = box.className.replace(/border-\S+/g, '').replace(/bg-\S+/g, '');
+      box.classList.add('border-success/40', 'bg-success/5');
+      icon.classList.remove('text-text-tertiary', 'text-amber');
+      icon.classList.add('text-success');
+      label.classList.remove('text-text-tertiary', 'text-amber');
+      label.classList.add('text-success');
+      // Stop any spinning
+      var svg = icon.querySelector('svg');
+      if (svg) svg.classList.remove('animate-spin');
+    } else if (pulsing) {
+      box.className = box.className.replace(/border-\S+/g, '').replace(/bg-\S+/g, '');
+      box.classList.add('border-amber', 'bg-amber/10');
+      box.style.boxShadow = '0 0 16px rgba(210,105,30,0.35)';
+      icon.classList.remove('text-text-tertiary', 'text-success');
+      icon.classList.add('text-amber');
+      label.classList.remove('text-text-tertiary', 'text-success');
+      label.classList.add('text-amber');
+    } else if (active) {
+      box.className = box.className.replace(/border-\S+/g, '').replace(/bg-\S+/g, '');
+      box.classList.add('border-amber/60', 'bg-amber/5');
+      box.style.boxShadow = '';
+      icon.classList.remove('text-text-tertiary', 'text-success');
+      icon.classList.add('text-amber');
+      label.classList.remove('text-text-tertiary', 'text-success');
+      label.classList.add('text-amber');
+    } else {
+      box.className = box.className.replace(/border-\S+/g, '').replace(/bg-\S+/g, '');
+      box.classList.add('border-border', 'bg-panel');
+      box.style.boxShadow = '';
+      icon.classList.remove('text-amber', 'text-success');
+      icon.classList.add('text-text-tertiary');
+      label.classList.remove('text-amber', 'text-success');
+      label.classList.add('text-text-tertiary');
+    }
+  }
+
+  function setArrow(arrow, active) {
+    var els = arrow.querySelectorAll('div');
+    els.forEach(function(el) {
+      el.classList.remove('bg-amber', 'bg-border', 'border-amber', 'border-border');
+      if (active) {
+        if (el.classList.contains('h-px')) el.classList.add('bg-amber');
+        else { el.classList.add('border-amber'); }
+      } else {
+        if (el.classList.contains('h-px')) el.classList.add('bg-border');
+        else { el.classList.add('border-border'); }
+      }
+    });
+  }
+
+  function updateUI(state, fileName) {
+    // Status bar
+    if (state === 'idle') {
+      statusTitle.textContent = 'Ready to Start';
+      statusTitle.className = 'font-display text-lg font-bold uppercase text-text-primary';
+      statusDesc.textContent = 'Please select a file to begin the workflow';
+    } else if (state === 'file-selected') {
+      statusTitle.textContent = 'File Selected';
+      statusTitle.className = 'font-display text-lg font-bold uppercase text-text-primary';
+      statusDesc.textContent = fileName + ' — starting workflow…';
+    } else if (state === 'complete') {
+      statusTitle.textContent = 'Complete';
+      statusTitle.className = 'font-display text-lg font-bold uppercase text-success';
+      statusDesc.textContent = 'All deliverables generated successfully';
+    } else {
+      statusTitle.textContent = 'Processing…';
+      statusTitle.className = 'font-display text-lg font-bold uppercase text-amber';
+      statusDesc.textContent = 'Processing ' + fileName + '…';
+    }
+
+    // Browse button state
+    browseBtn.disabled = state !== 'idle';
+
+    // Workflow boxes
+    boxes.forEach(function(box, i) {
+      var stepName = boxStepMap[i];
+      var isActive = atLeast(state, stepName);
+      var isComplete = past(state, stepName);
+      var isPulsing = (state === stepName) || (i === 7 && state === 'qa');
+      setBoxState(box, isActive, isComplete, isPulsing);
+    });
+
+    // Arrows
+    if (arrows[0]) setArrow(arrows[0], atLeast(state, 'uploading'));
+    if (arrows[1]) setArrow(arrows[1], atLeast(state, 'processing'));
+
+    // Model box
+    if (modelBox) {
+      modelBox.className = modelBox.className.replace(/border-\S+/g, '').replace(/bg-\S+/g, '');
+      if (atLeast(state, 'parsing')) {
+        modelBox.classList.add('border-amber/60', 'bg-amber/5');
+      } else {
+        modelBox.classList.add('border-border', 'bg-panel');
+      }
+      // Remove old status labels
+      var oldLabels = modelBox.querySelectorAll('.model-status');
+      oldLabels.forEach(function(l) { l.remove(); });
+      if (atLeast(state, 'parsing') && !past(state, 'qa')) {
+        var span = document.createElement('span');
+        span.className = 'model-status mt-1 font-mono text-[10px] uppercase tracking-[0.15em] text-amber';
+        span.textContent = 'Active';
+        modelBox.appendChild(span);
+      } else if (past(state, 'qa')) {
+        var span = document.createElement('span');
+        span.className = 'model-status mt-1 font-mono text-[10px] uppercase tracking-[0.15em] text-success';
+        span.textContent = 'Done';
+        modelBox.appendChild(span);
+      }
+    }
+
+    // Deliverables
+    deliverables.forEach(function(d) {
+      var icon = d.querySelector('svg');
+      var label = d.querySelector('span');
+      d.classList.remove('border-success/40', 'bg-success/5', 'border-border', 'bg-panel');
+      if (state === 'complete') {
+        d.classList.add('border-success/40', 'bg-success/5');
+        if (icon) { icon.classList.remove('text-text-tertiary'); icon.classList.add('text-success'); }
+        if (label) { label.classList.remove('text-text-tertiary'); label.classList.add('text-success'); }
+      } else {
+        d.classList.add('border-border', 'bg-panel');
+        if (icon) { icon.classList.remove('text-success'); icon.classList.add('text-text-tertiary'); }
+        if (label) { label.classList.remove('text-success'); label.classList.add('text-text-tertiary'); }
+      }
+    });
+  }
+
+  var timers = [];
+  function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+
+  function startWorkflow() {
+    clearTimers();
+    var sequence = ['uploading','processing','parsing','analysing','building','qa','complete'];
+    var delay = 0;
+    sequence.forEach(function(step) {
+      delay += Math.floor(Math.random() * 3000) + 2000;
+      var t = setTimeout(function() { updateUI(step, currentFile); }, delay);
+      timers.push(t);
+    });
+  }
+
+  var currentFile = null;
+
+  browseBtn.addEventListener('click', function() {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', function(e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    currentFile = file.name;
+    updateUI('file-selected', currentFile);
+    var t = setTimeout(function() {
+      updateUI('uploading', currentFile);
+      startWorkflow();
+    }, 600);
+    timers.push(t);
+  });
+
+  resetBtn.addEventListener('click', function() {
+    clearTimers();
+    currentFile = null;
+    fileInput.value = '';
+    updateUI('idle', null);
+  });
+});
+</script>
+<!--$--><div class="min-h-screen bg-bg pt-[65px]"><div class="mx-auto max-w-[1200px] px-6 py-24 md:px-12"><a href="/" class="mb-8 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary transition hover:text-amber"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left" aria-hidden="true"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>Back to Home</a><span class="font-mono text-[11px] uppercase tracking-[0.18em] text-amber">Demo</span><h1 class="mt-3 font-display text-[clamp(34px,4vw,54px)] font-[800] leading-[0.95] uppercase text-text-primary">Logic Migration Tool</h1><p class="mt-5 max-w-xl text-lg leading-relaxed text-text-secondary">Upload a logic file to begin the automated migration workflow. The PivotolAi model will parse, analyse, and generate all output deliverables.</p><div class="mt-12 flex flex-wrap items-center gap-4 rounded-sm border border-border bg-panel px-6 py-5"><div class="mr-auto"><span class="font-display text-lg font-bold uppercase text-text-primary">Ready to Start</span><p class="mt-0.5 font-mono text-[11px] text-text-tertiary">Please select a file to begin the workflow</p></div><input type="file" class="hidden"><button class="inline-flex items-center gap-2 rounded-sm bg-amber px-5 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-white shadow-[0_0_24px_rgba(210,105,30,0.3)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-amber2 hover:shadow-[0_0_32px_rgba(210,105,30,0.45)] disabled:pointer-events-none disabled:opacity-40"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"></path><path d="M14 2v5a1 1 0 0 0 1 1h5"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>Browse File</button><button class="inline-flex items-center gap-2 rounded-sm border border-border px-5 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-text-tertiary transition hover:border-amber hover:text-amber">Reset</button></div><div class="mt-12 overflow-x-auto"><div class="flex flex-col items-start gap-6 md:flex-row md:items-center"><div class="relative flex flex-col items-center gap-3 rounded-sm border-2 p-5 transition-all duration-500 border-border bg-panel"><div class="transition-colors duration-500 text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"></path><path d="M14 2v5a1 1 0 0 0 1 1h5"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg></div><span class="font-mono text-[11px] uppercase tracking-[0.15em] transition-colors duration-500 text-text-tertiary">File Browse</span></div><div class="hidden items-center md:flex"><div class="h-px w-8 transition-colors duration-500 bg-border"></div><div class="h-2 w-2 rotate-45 border-t border-r transition-colors duration-500 border-border"></div></div><div class="relative flex flex-col items-center gap-3 rounded-sm border-2 p-5 transition-all duration-500 border-border bg-panel"><div class="transition-colors duration-500 text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload" aria-hidden="true"><path d="M12 3v12"></path><path d="m17 8-5-5-5 5"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path></svg></div><span class="font-mono text-[11px] uppercase tracking-[0.15em] transition-colors duration-500 text-text-tertiary">File Upload</span></div><div class="hidden items-center md:flex"><div class="h-px w-8 transition-colors duration-500 bg-border"></div><div class="h-2 w-2 rotate-45 border-t border-r transition-colors duration-500 border-border"></div></div><div class="relative flex flex-col items-center gap-3 rounded-sm border-2 p-5 transition-all duration-500 border-border bg-panel"><div class="transition-colors duration-500 text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-cpu" aria-hidden="true"><path d="M12 20v2"></path><path d="M12 2v2"></path><path d="M17 20v2"></path><path d="M17 2v2"></path><path d="M2 12h2"></path><path d="M2 17h2"></path><path d="M2 7h2"></path><path d="M20 12h2"></path><path d="M20 17h2"></path><path d="M20 7h2"></path><path d="M7 20v2"></path><path d="M7 2v2"></path><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="8" y="8" width="8" height="8" rx="1"></rect></svg></div><span class="font-mono text-[11px] uppercase tracking-[0.15em] transition-colors duration-500 text-text-tertiary">Processing</span></div></div><div class="mt-10 grid gap-6 md:grid-cols-[1fr_auto_1fr]"><div class="flex flex-col gap-4"><div class="relative flex flex-col items-center gap-3 rounded-sm border-2 p-5 transition-all duration-500 border-border bg-panel"><div class="transition-colors duration-500 text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search" aria-hidden="true"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg></div><span class="font-mono text-[11px] uppercase tracking-[0.15em] transition-colors duration-500 text-text-tertiary">Parsing</span></div><div class="relative flex flex-col items-center gap-3 rounded-sm border-2 p-5 transition-all duration-500 border-border bg-panel"><div class="transition-colors duration-500 text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chart-column" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg></div><span class="font-mono text-[11px] uppercase tracking-[0.15em] transition-colors duration-500 text-text-tertiary">Analysing</span></div></div><div class="flex flex-col items-center justify-center gap-3 rounded-sm border-2 px-10 py-8 transition-all duration-500 border-border bg-panel"><span class="text-4xl">🧠</span><span class="font-display text-xl font-bold uppercase text-text-primary">PivotolAi</span><span class="font-display text-xl font-bold uppercase text-text-primary -mt-2">Model</span></div><div class="flex flex-col gap-4"><div class="relative flex flex-col items-center gap-3 rounded-sm border-2 p-5 transition-all duration-500 border-border bg-panel"><div class="transition-colors duration-500 text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-blocks" aria-hidden="true"><path d="M10 22V7a1 1 0 0 0-1-1H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5a1 1 0 0 0-1-1H2"></path><rect x="14" y="2" width="8" height="8" rx="1"></rect></svg></div><span class="font-mono text-[11px] uppercase tracking-[0.15em] transition-colors duration-500 text-text-tertiary">Building Content</span></div><div class="flex flex-col gap-4"><div class="relative flex flex-col items-center gap-3 rounded-sm border-2 p-5 transition-all duration-500 border-border bg-panel"><div class="transition-colors duration-500 text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-check" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg></div><span class="font-mono text-[11px] uppercase tracking-[0.15em] transition-colors duration-500 text-text-tertiary">QA/QC</span></div><div class="relative flex flex-col items-center gap-3 rounded-sm border-2 p-5 transition-all duration-500 border-border bg-panel"><div class="transition-colors duration-500 text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bot" aria-hidden="true"><path d="M12 8V4H8"></path><rect width="16" height="12" x="4" y="8" rx="2"></rect><path d="M2 14h2"></path><path d="M20 14h2"></path><path d="M15 13v2"></path><path d="M9 13v2"></path></svg></div><span class="font-mono text-[11px] uppercase tracking-[0.15em] transition-colors duration-500 text-text-tertiary">Agent Validation</span></div></div></div></div></div><div class="mt-12"><span class="font-mono text-[11px] uppercase tracking-[0.18em] text-amber">Output Deliverables</span><div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6"><div class="flex items-center gap-3 rounded-sm border px-4 py-3 transition-all duration-500 border-border bg-panel" style="transition-delay:0ms"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle shrink-0 text-text-tertiary" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle></svg><span class="font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary">C&amp;E</span></div><div class="flex items-center gap-3 rounded-sm border px-4 py-3 transition-all duration-500 border-border bg-panel" style="transition-delay:150ms"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle shrink-0 text-text-tertiary" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle></svg><span class="font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary">PCN</span></div><div class="flex items-center gap-3 rounded-sm border px-4 py-3 transition-all duration-500 border-border bg-panel" style="transition-delay:300ms"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle shrink-0 text-text-tertiary" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle></svg><span class="font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary">FBD</span></div><div class="flex items-center gap-3 rounded-sm border px-4 py-3 transition-all duration-500 border-border bg-panel" style="transition-delay:450ms"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle shrink-0 text-text-tertiary" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle></svg><span class="font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary">QA/QC</span></div><div class="flex items-center gap-3 rounded-sm border px-4 py-3 transition-all duration-500 border-border bg-panel" style="transition-delay:600ms"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle shrink-0 text-text-tertiary" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle></svg><span class="font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary">HAZOP</span></div><div class="flex items-center gap-3 rounded-sm border px-4 py-3 transition-all duration-500 border-border bg-panel" style="transition-delay:750ms"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle shrink-0 text-text-tertiary" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle></svg><span class="font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary">Boolean</span></div></div></div><div class="mt-16 rounded-sm border border-border bg-panel p-8"><span class="font-mono text-[11px] uppercase tracking-[0.18em] text-amber">How It Works</span><div class="mt-6 grid gap-6 md:grid-cols-3"><div><span class="font-mono text-sm font-bold text-amber">01</span><h3 class="mt-2 font-display text-lg font-bold uppercase text-text-primary">Select a Logic File</h3><p class="mt-2 text-[15px] leading-relaxed text-text-tertiary">Browse your filesystem and select the logic source file you want to migrate.</p></div><div><span class="font-mono text-sm font-bold text-amber">02</span><h3 class="mt-2 font-display text-lg font-bold uppercase text-text-primary">Automated Processing</h3><p class="mt-2 text-[15px] leading-relaxed text-text-tertiary">The PivotolAi model parses, analyses, and builds all deliverable content automatically.</p></div><div><span class="font-mono text-sm font-bold text-amber">03</span><h3 class="mt-2 font-display text-lg font-bold uppercase text-text-primary">Download Outputs</h3><p class="mt-2 text-[15px] leading-relaxed text-text-tertiary">Receive C&amp;E, PCN, FBD, QA/QC, HAZOP, and Boolean deliverables — quality-checked and validated.</p></div></div></div></div></div><!--/$--></body></html>

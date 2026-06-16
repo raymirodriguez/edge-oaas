@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preload" as="image" href="/oaas_logoblack.png" />
+  <title>OaaS — Optimization as a Service | Pivotol AI</title>
+  <meta name="description" content="On-premise energy optimization for industrial facilities. Deploy controlled infrastructure to reduce measurable energy waste with verified P&L tracking." />
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            bg: 'var(--bg)',
+            bg2: 'var(--bg2)',
+            panel: 'var(--panel)',
+            border: 'var(--border)',
+            amber: '#d2691e',
+            amber2: '#e07828',
+            alert: '#ef4444',
+            success: '#22c55e',
+            'text-primary': 'var(--text-primary)',
+            'text-secondary': 'var(--text-secondary)',
+            'text-tertiary': 'var(--text-tertiary)',
+          },
+          fontFamily: {
+            display: ['"Barlow Condensed"', 'sans-serif'],
+            body: ['"Barlow"', 'sans-serif'],
+            mono: ['"IBM Plex Mono"', 'monospace'],
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #f5f5f0;
+      --bg2: #eaeae5;
+      --panel: #ffffff;
+      --border: #d0d0c8;
+      --text-primary: #1a1a1a;
+      --text-secondary: #3a3a3a;
+      --text-tertiary: #6a6a6a;
+    }
+    .dark {
+      --bg: #0e1118;
+      --bg2: #131720;
+      --panel: #12161f;
+      --border: #1e2535;
+      --text-primary: #e8eaf0;
+      --text-secondary: #cfd6e6;
+      --text-tertiary: #aab2c5;
+    }
+    body {
+      font-family: 'Barlow', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    @keyframes ticker {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .ticker-animate {
+      animation: ticker 30s linear infinite;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-up {
+      animation: fadeUp 0.7s ease-out both;
+    }
+    .delay-200 {
+      animation-delay: 0.2s;
+    }
+
+    /* Dark mode logo swap */
+    .logo-dark { display: none; }
+    .dark .logo-light { display: none; }
+    .dark .logo-dark { display: block; }
+
+    /* Nav background with proper opacity for both themes */
+    .nav-blur {
+      background-color: rgba(245, 245, 240, 0.8);
+    }
+    .dark .nav-blur {
+      background-color: rgba(14, 17, 24, 0.8);
+    }
+  </style>
+</head>
+<body>
+  <script>
+    (function(){
+      try {
+        var t = localStorage.getItem('theme');
+        if (t === 'dark') document.documentElement.classList.add('dark');
+      } catch(e) {}
+    })();
+  </script>
+
+  <div class="min-h-screen bg-bg">
+    <!-- Nav -->
+    <nav class="fixed top-0 z-50 w-full border-b border-border nav-blur backdrop-blur-md">
+      <div class="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-4 md:px-12">
+        <div class="flex items-center gap-3">
+          <img src="/oaas_logoblack.png" alt="OaaS Logo" class="h-8 w-auto logo-light" />
+          <img src="/oaas_logowhite.png" alt="OaaS Logo" class="h-8 w-auto logo-dark" />
+        </div>
+        <div class="hidden items-center gap-8 md:flex">
+          <a href="#about" class="font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary transition hover:text-amber">About</a>
+          <a href="#how-it-works" class="font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary transition hover:text-amber">How It Works</a>
+          <a href="#who-we-serve" class="font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary transition hover:text-amber">Industries</a>
+          <a href="#results" class="font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary transition hover:text-amber">Results</a>
+          <a href="https://www.pivotolai.com" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 rounded-sm border border-border px-4 py-2 font-mono text-[11px] uppercase tracking-[0.12em] text-text-tertiary transition hover:border-amber hover:text-amber">
+            Pivotol AI
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+          </a>
+          <button id="themeToggle" aria-label="Toggle theme" class="rounded-sm border border-border p-2 text-text-tertiary transition hover:border-amber hover:text-amber">
+            <svg id="moonIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+            <svg id="sunIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
+        </div>
+        <div class="flex items-center gap-4 md:hidden">
+          <button id="themeToggleMobile" aria-label="Toggle theme" class="rounded-sm border border-border p-2 text-text-tertiary transition hover:border-amber hover:text-amber">
+            <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+            <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
+          <a href="https://www.pivotolai.com" target="_blank" rel="noopener noreferrer" class="font-mono text-[11px] uppercase tracking-[0.12em] text-text-tertiary">
+            Pivotol AI
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline ml-1" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Ticker -->
+    <div class="mt-[65px] overflow-hidden bg-amber py-2">
+      <div class="ticker-animate flex whitespace-nowrap">
+        <span class="font-mono text-[11px] font-semibold uppercase tracking-[0.25em] text-bg">&nbsp;&nbsp;OPTIMIZATION AS A SERVICE&nbsp;&nbsp;&mdash;&nbsp;&nbsp;CONTROL kW. CONTROL COST.&nbsp;&nbsp;&mdash;&nbsp;&nbsp;RISK-MANAGED ENERGY OPTIMIZATION&nbsp;&nbsp;&mdash;&nbsp;&nbsp;VERIFIED P&amp;L TRACKING&nbsp;&nbsp;&mdash;&nbsp;&nbsp;DEPLOY IN 72HRS&nbsp;&nbsp;&mdash;&nbsp;&nbsp;ON-PREMISE. NO CLOUD DEPENDENCY.&nbsp;&nbsp;&mdash;&nbsp;&nbsp;</span>
+        <span class="font-mono text-[11px] font-semibold uppercase tracking-[0.25em] text-bg">&nbsp;&nbsp;OPTIMIZATION AS A SERVICE&nbsp;&nbsp;&mdash;&nbsp;&nbsp;CONTROL kW. CONTROL COST.&nbsp;&nbsp;&mdash;&nbsp;&nbsp;RISK-MANAGED ENERGY OPTIMIZATION&nbsp;&nbsp;&mdash;&nbsp;&nbsp;VERIFIED P&amp;L TRACKING&nbsp;&nbsp;&mdash;&nbsp;&nbsp;DEPLOY IN 72HRS&nbsp;&nbsp;&mdash;&nbsp;&nbsp;ON-PREMISE. NO CLOUD DEPENDENCY.&nbsp;&nbsp;&mdash;&nbsp;&nbsp;</span>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <section class="relative overflow-hidden bg-bg py-28 md:py-40">
+      <div class="pointer-events-none absolute inset-0 opacity-[0.04]" style="background-image:linear-gradient(rgba(210,105,30,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(210,105,30,0.5) 1px, transparent 1px);background-size:60px 60px"></div>
+      <div class="relative mx-auto max-w-[1200px] px-6 md:px-12">
+        <div class="max-w-3xl animate-fade-up">
+          <span class="font-mono text-[11px] uppercase tracking-[0.18em] text-amber">Optimization as a Service</span>
+          <h1 class="mt-4 font-display text-[clamp(52px,6vw,80px)] font-[800] uppercase leading-[0.92] tracking-[-0.01em] text-text-primary">Control kW.<br><span class="text-amber">Control Cost.</span></h1>
+          <p class="mt-6 max-w-xl text-lg leading-relaxed text-text-secondary">On-premise energy optimization infrastructure for live industrial environments. Measurable kW reduction, digital twin validation, and verified P&amp;L impact &mdash; deployed in 72 hours.</p>
+          <div class="mt-10 flex flex-wrap gap-4">
+            <a href="https://www.pivotolai.com" class="inline-flex items-center gap-2 rounded-sm bg-amber px-7 py-3.5 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-white shadow-[0_0_24px_rgba(210,105,30,0.3)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-amber2 hover:shadow-[0_0_32px_rgba(210,105,30,0.45)]">
+              Talk to an Engineer
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </a>
+            <a href="/demo" class="inline-flex items-center gap-2 rounded-sm border border-amber/40 px-7 py-3.5 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-amber transition-all duration-200 hover:-translate-y-0.5 hover:border-amber hover:bg-amber/10">
+              View Demo
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </a>
+          </div>
+        </div>
+        <div class="mt-20 grid grid-cols-2 gap-8 md:grid-cols-4 animate-fade-up delay-200">
+          <div class="text-center">
+            <div class="font-display text-[clamp(36px,5vw,56px)] font-[800] leading-none text-amber">72hr</div>
+            <div class="mt-2 font-mono text-[10px] uppercase tracking-[0.2em] text-text-tertiary">Deploy Time</div>
+          </div>
+          <div class="text-center">
+            <div class="font-display text-[clamp(36px,5vw,56px)] font-[800] leading-none text-amber">30%</div>
+            <div class="mt-2 font-mono text-[10px] uppercase tracking-[0.2em] text-text-tertiary">Avg. Energy Waste Found</div>
+          </div>
+          <div class="text-center">
+            <div class="font-display text-[clamp(36px,5vw,56px)] font-[800] leading-none text-amber">0</div>
+            <div class="mt-2 font-mono text-[10px] uppercase tracking-[0.2em] text-text-tertiary">Cloud Dependencies</div>
+          </div>
+          <div class="text-center">
+            <div class="font-display text-[clamp(36px,5vw,56px)] font-[800] leading-none text-amber">24/7</div>
+            <div class="mt-2 font-mono text-[10px] uppercase tracking-[0.2em] text-text-tertiary">Autonomous Operation</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- About -->
+    <section id="about" class="bg-bg2 py-24 md:py-32">
+      <div class="mx-auto max-w-[1200px] px-6 md:px-12">
+        <div class="mb-16 max-w-3xl">
+          <span class="font-mono text-[11px] uppercase tracking-[0.18em] text-amber">What Is OaaS</span>
+          <h2 class="mt-3 font-display text-[clamp(34px,4vw,54px)] font-[800] leading-[0.95] uppercase text-text-primary">Optimization Without the Overhead</h2>
+          <p class="mt-5 text-lg text-text-secondary leading-relaxed">Optimization as a Service (OaaS) is Pivotol AI's managed energy optimization offering. We deploy controlled infrastructure inside your operating facility &mdash; capturing only the datapoints that matter, validating every action through digital twin modeling, and tracking measurable P&amp;L impact. No disruptions. No guesswork.</p>
+        </div>
+        <div class="grid gap-6 md:grid-cols-3">
+          <!-- Card 1 -->
+          <div class="group relative rounded-sm border border-border bg-panel p-8 transition-all duration-300 hover:border-amber/60 hover:bg-panel/80">
+            <div class="absolute top-0 left-0 h-[2px] w-0 bg-amber transition-all duration-300 group-hover:w-full"></div>
+            <div class="mb-5 text-amber">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20v2"/><path d="M12 2v2"/><path d="M17 20v2"/><path d="M17 2v2"/><path d="M2 12h2"/><path d="M2 17h2"/><path d="M2 7h2"/><path d="M20 12h2"/><path d="M20 17h2"/><path d="M20 7h2"/><path d="M7 20v2"/><path d="M7 2v2"/><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg>
+            </div>
+            <h3 class="mb-3 font-display text-xl font-bold uppercase text-text-primary">On-Premise Deploy</h3>
+            <p class="text-[15px] leading-relaxed text-text-tertiary">All optimization runs on your infrastructure. No cloud dependency, no external data transfer. Your facility, your data, your control.</p>
+          </div>
+          <!-- Card 2 -->
+          <div class="group relative rounded-sm border border-border bg-panel p-8 transition-all duration-300 hover:border-amber/60 hover:bg-panel/80">
+            <div class="absolute top-0 left-0 h-[2px] w-0 bg-amber transition-all duration-300 group-hover:w-full"></div>
+            <div class="mb-5 text-amber">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+            </div>
+            <h3 class="mb-3 font-display text-xl font-bold uppercase text-text-primary">Digital Twin Validation</h3>
+            <p class="text-[15px] leading-relaxed text-text-tertiary">Every optimization action is validated against a digital twin of your systems before execution. Data before capital investment, proof before commitment.</p>
+          </div>
+          <!-- Card 3 -->
+          <div class="group relative rounded-sm border border-border bg-panel p-8 transition-all duration-300 hover:border-amber/60 hover:bg-panel/80">
+            <div class="absolute top-0 left-0 h-[2px] w-0 bg-amber transition-all duration-300 group-hover:w-full"></div>
+            <div class="mb-5 text-amber">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+            </div>
+            <h3 class="mb-3 font-display text-xl font-bold uppercase text-text-primary">Verified P&amp;L Tracking</h3>
+            <p class="text-[15px] leading-relaxed text-text-tertiary">Real-time financial impact tracking tied to actual kW/kWh reduction &mdash; not projected savings, but measured, verified results on your balance sheet.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how-it-works" class="bg-bg py-24 md:py-32">
+      <div class="mx-auto max-w-[1200px] px-6 md:px-12">
+        <div class="mb-16 max-w-3xl">
+          <span class="font-mono text-[11px] uppercase tracking-[0.18em] text-amber">How It Works</span>
+          <h2 class="mt-3 font-display text-[clamp(34px,4vw,54px)] font-[800] leading-[0.95] uppercase text-text-primary">From Assessment to Autonomous Operation</h2>
+          <p class="mt-5 text-lg text-text-secondary leading-relaxed">A disciplined, risk-managed process that takes your facility from energy waste discovery to continuous, hands-off optimization.</p>
+        </div>
+        <div class="relative">
+          <div class="absolute left-6 top-0 hidden h-full w-px bg-border md:block"></div>
+          <div class="space-y-12">
+            <div class="relative flex gap-8 md:pl-16">
+              <div class="absolute left-0 hidden md:flex h-12 w-12 shrink-0 items-center justify-center rounded-sm border border-amber/40 bg-bg font-mono text-sm font-bold text-amber">01</div>
+              <div>
+                <div class="mb-1 flex items-center gap-3 md:hidden"><span class="font-mono text-sm font-bold text-amber">01</span></div>
+                <h3 class="font-display text-xl font-bold uppercase text-text-primary">Non-Invasive Assessment</h3>
+                <p class="mt-2 max-w-xl text-[15px] leading-relaxed text-text-tertiary">We deploy our Suitcase Package &mdash; a compact sensor kit that installs in under 72 hours with zero operational disruption. It maps your energy flows and identifies waste.</p>
+              </div>
+            </div>
+            <div class="relative flex gap-8 md:pl-16">
+              <div class="absolute left-0 hidden md:flex h-12 w-12 shrink-0 items-center justify-center rounded-sm border border-amber/40 bg-bg font-mono text-sm font-bold text-amber">02</div>
+              <div>
+                <div class="mb-1 flex items-center gap-3 md:hidden"><span class="font-mono text-sm font-bold text-amber">02</span></div>
+                <h3 class="font-display text-xl font-bold uppercase text-text-primary">Digital Twin Modeling</h3>
+                <p class="mt-2 max-w-xl text-[15px] leading-relaxed text-text-tertiary">Your facility gets a precise digital twin. Every potential optimization is simulated and validated before any physical action is taken. No surprises.</p>
+              </div>
+            </div>
+            <div class="relative flex gap-8 md:pl-16">
+              <div class="absolute left-0 hidden md:flex h-12 w-12 shrink-0 items-center justify-center rounded-sm border border-amber/40 bg-bg font-mono text-sm font-bold text-amber">03</div>
+              <div>
+                <div class="mb-1 flex items-center gap-3 md:hidden"><span class="font-mono text-sm font-bold text-amber">03</span></div>
+                <h3 class="font-display text-xl font-bold uppercase text-text-primary">Controlled Deployment</h3>
+                <p class="mt-2 max-w-xl text-[15px] leading-relaxed text-text-tertiary">Approved optimizations are deployed incrementally with continuous monitoring. Each action is measured against predicted outcomes in real time.</p>
+              </div>
+            </div>
+            <div class="relative flex gap-8 md:pl-16">
+              <div class="absolute left-0 hidden md:flex h-12 w-12 shrink-0 items-center justify-center rounded-sm border border-amber/40 bg-bg font-mono text-sm font-bold text-amber">04</div>
+              <div>
+                <div class="mb-1 flex items-center gap-3 md:hidden"><span class="font-mono text-sm font-bold text-amber">04</span></div>
+                <h3 class="font-display text-xl font-bold uppercase text-text-primary">Autonomous Operation</h3>
+                <p class="mt-2 max-w-xl text-[15px] leading-relaxed text-text-tertiary">Set it and forget it. The system operates continuously from day one &mdash; no daily tuning, no babysitting. You get verified P&amp;L reports, not maintenance headaches.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Who We Serve -->
+    <section id="who-we-serve" class="bg-bg2 py-24 md:py-32">
+      <div class="mx-auto max-w-[1200px] px-6 md:px-12">
+        <div class="mb-16 max-w-3xl">
+          <span class="font-mono text-[11px] uppercase tracking-[0.18em] text-amber">Who We Serve</span>
+          <h2 class="mt-3 font-display text-[clamp(34px,4vw,54px)] font-[800] leading-[0.95] uppercase text-text-primary">Built for Live Operations</h2>
+          <p class="mt-5 text-lg text-text-secondary leading-relaxed">OaaS is engineered for environments where uptime is non-negotiable and energy costs directly impact the bottom line.</p>
+        </div>
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <!-- Industrial Manufacturing -->
+          <div class="group relative rounded-sm border border-border bg-panel p-8 transition-all duration-300 hover:border-amber/60">
+            <div class="absolute top-0 left-0 h-[2px] w-0 bg-amber transition-all duration-300 group-hover:w-full"></div>
+            <div class="mb-5 text-amber">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16h.01"/><path d="M16 16h.01"/><path d="M3 19a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5a.5.5 0 0 0-.769-.422l-4.462 2.844A.5.5 0 0 1 15 10.5v-2a.5.5 0 0 0-.769-.422L9.77 10.922A.5.5 0 0 1 9 10.5V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z"/><path d="M8 16h.01"/></svg>
+            </div>
+            <h3 class="mb-4 font-display text-lg font-bold uppercase text-text-primary">Industrial Manufacturing</h3>
+            <ul class="space-y-2">
+              <li class="flex items-start gap-2 text-[15px] text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-1 shrink-0 text-amber" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>HVAC &amp; process cooling optimization</li>
+              <li class="flex items-start gap-2 text-[15px] text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-1 shrink-0 text-amber" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>Compressed air system efficiency</li>
+              <li class="flex items-start gap-2 text-[15px] text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-1 shrink-0 text-amber" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>Motor &amp; drive load balancing</li>
+              <li class="flex items-start gap-2 text-[15px] text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-1 shrink-0 text-amber" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>Shift-based demand management</li>
+            </ul>
+          </div>
+          <!-- Commercial Real Estate -->
+          <div class="group relative rounded-sm border border-border bg-panel p-8 transition-all duration-300 hover:border-amber/60">
+            <div class="absolute top-0 left-0 h-[2px] w-0 bg-amber transition-all duration-300 group-hover:w-full"></div>
+            <div class="mb-5 text-amber">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 12h4"/><path d="M10 8h4"/><path d="M14 21v-3a2 2 0 0 0-4 0v3"/><path d="M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2"/><path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/></svg>
+            </div>
+            <h3 class="mb-4 font-display text-lg font-bold uppercase text-text-primary">Commercial Real Estate</h3>
+            <ul class="space-y-2">
+              <li class="flex items-start gap-2 text-[15px] text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-1 shrink-0 text-amber" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>Portfolio-wide energy visibility</li>
+              <li class="flex items-start gap-2 text-[15px] text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-1 shrink-0 text-amber" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>Tenant comfort vs. cost optimization</li>
+              <li class="flex items-start gap-2 text-[15px] text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-1 shrink-0 text-amber" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>BMS integration &amp; override</li>
+              <li class="flex items-start gap-2 text-[15px] text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-1 shrink-0 text-amber" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>Peak demand reduction</li>
+            </ul>
+          </div>
+          <!-- Hospitals -->
+          <div class="group relative rounded-sm border border-border bg-panel p-8 transition-all duration-300 hover:border-amber/60">
+            <div class="absolute top-0 left-0 h-[2px] w-0 bg-amber transition-all duration-300 group-hover:w-full"></div>
+            <div class="mb-5 text-amber">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v4"/><path d="M14 21v-3a2 2 0 0 0-4 0v3"/><path d="M14 9h-4"/><path d="M18 11h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h2"/><path d="M18 21V5a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16"/></svg>
+            </div>
+            <h3 class="mb-4 font-display text-lg font-bold uppercase text-text-primary">Hospitals &amp; Healthcare</h3>
+            <ul class="space-y-2">
+              <li class="flex items-start gap-2 text-[15px] text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-1 shrink-0 text-amber" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>Critical environment compliance</li>
+              <li class="flex items-start gap-2 text-[15px] text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-1 shrink-0 text-amber" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>Air handling &amp; sterile zone control</li>
+              <li class="flex items-start gap-2 text-[15px] text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-1 shrink-0 text-amber" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>Emergency power optimization</li>
+              <li class="flex items-start gap-2 text-[15px] text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-1 shrink-0 text-amber" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>24/7 uptime-safe operation</li>
+            </ul>
+          </div>
+          <!-- Oil & Gas -->
+          <div class="group relative rounded-sm border border-border bg-panel p-8 transition-all duration-300 hover:border-amber/60">
+            <div class="absolute top-0 left-0 h-[2px] w-0 bg-amber transition-all duration-300 group-hover:w-full"></div>
+            <div class="mb-5 text-amber">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 4 0v-6.998a2 2 0 0 0-.59-1.42L18 5"/><path d="M14 21V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v16"/><path d="M2 21h13"/><path d="M3 9h11"/></svg>
+            </div>
+            <h3 class="mb-4 font-display text-lg font-bold uppercase text-text-primary">Oil &amp; Gas Operations</h3>
+            <ul class="space-y-2">
+              <li class="flex items-start gap-2 text-[15px] text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-1 shrink-0 text-amber" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>Remote site energy management</li>
+              <li class="flex items-start gap-2 text-[15px] text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-1 shrink-0 text-amber" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>Pump &amp; compressor optimization</li>
+              <li class="flex items-start gap-2 text-[15px] text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-1 shrink-0 text-amber" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>Flare &amp; waste heat recovery</li>
+              <li class="flex items-start gap-2 text-[15px] text-text-tertiary"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-1 shrink-0 text-amber" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>Hazardous environment rated</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section id="results" class="bg-bg py-24 md:py-32">
+      <div class="mx-auto max-w-[1200px] px-6 md:px-12">
+        <div class="mb-16 max-w-3xl">
+          <span class="font-mono text-[11px] uppercase tracking-[0.18em] text-amber">Why OaaS</span>
+          <h2 class="mt-3 font-display text-[clamp(34px,4vw,54px)] font-[800] leading-[0.95] uppercase text-text-primary">Measured Results, Not Projections</h2>
+          <p class="mt-5 text-lg text-text-secondary leading-relaxed">Every metric tied to real kW reduction and verified financial impact.</p>
+        </div>
+        <div class="grid gap-6 md:grid-cols-2">
+          <div class="rounded-sm border border-border bg-panel p-10">
+            <span class="font-mono text-[11px] uppercase tracking-[0.18em] text-amber">Traditional Approach</span>
+            <ul class="mt-6 space-y-4 text-text-tertiary">
+              <li class="flex items-start gap-3 text-[15px]"><span class="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-alert"></span>Large upfront capital expenditure</li>
+              <li class="flex items-start gap-3 text-[15px]"><span class="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-alert"></span>Months-long implementation timelines</li>
+              <li class="flex items-start gap-3 text-[15px]"><span class="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-alert"></span>Projected savings with no verification</li>
+              <li class="flex items-start gap-3 text-[15px]"><span class="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-alert"></span>Cloud-dependent, external data transfers</li>
+              <li class="flex items-start gap-3 text-[15px]"><span class="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-alert"></span>Ongoing manual tuning required</li>
+              <li class="flex items-start gap-3 text-[15px]"><span class="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-alert"></span>Vendor lock-in contracts</li>
+            </ul>
+          </div>
+          <div class="rounded-sm border border-amber/30 bg-panel p-10">
+            <span class="font-mono text-[11px] uppercase tracking-[0.18em] text-amber">OaaS by Pivotol AI</span>
+            <ul class="mt-6 space-y-4 text-text-secondary">
+              <li class="flex items-start gap-3 text-[15px]"><span class="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-success"></span>Zero upfront capital &mdash; service model</li>
+              <li class="flex items-start gap-3 text-[15px]"><span class="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-success"></span>Deployed and operational in 72 hours</li>
+              <li class="flex items-start gap-3 text-[15px]"><span class="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-success"></span>Verified P&amp;L from day one</li>
+              <li class="flex items-start gap-3 text-[15px]"><span class="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-success"></span>Fully on-premise, no cloud dependency</li>
+              <li class="flex items-start gap-3 text-[15px]"><span class="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-success"></span>Autonomous operation &mdash; set and forget</li>
+              <li class="flex items-start gap-3 text-[15px]"><span class="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-success"></span>Flexible engagement, no lock-in</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Trust badges -->
+    <section class="border-y border-border bg-bg2 py-16">
+      <div class="mx-auto grid max-w-[1200px] grid-cols-2 gap-8 px-6 md:grid-cols-4 md:px-12">
+        <div class="flex flex-col items-center gap-3 text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <span class="font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary">72-Hour Deploy</span>
+        </div>
+        <div class="flex flex-col items-center gap-3 text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+          <span class="font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary">Risk-Managed</span>
+        </div>
+        <div class="flex flex-col items-center gap-3 text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber" aria-hidden="true"><path d="M16 17h6v-6"/><path d="m22 17-8.5-8.5-5 5L2 7"/></svg>
+          <span class="font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary">Verified Savings</span>
+        </div>
+        <div class="flex flex-col items-center gap-3 text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber" aria-hidden="true"><path d="M12 20v2"/><path d="M12 2v2"/><path d="M17 20v2"/><path d="M17 2v2"/><path d="M2 12h2"/><path d="M2 17h2"/><path d="M2 7h2"/><path d="M20 12h2"/><path d="M20 17h2"/><path d="M20 7h2"/><path d="M7 20v2"/><path d="M7 2v2"/><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg>
+          <span class="font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary">Fully On-Premise</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="bg-bg py-24 md:py-32">
+      <div class="mx-auto max-w-[1200px] px-6 text-center md:px-12">
+        <span class="font-mono text-[11px] uppercase tracking-[0.18em] text-amber">Get Started</span>
+        <h2 class="mx-auto mt-4 max-w-2xl font-display text-[clamp(34px,4vw,54px)] font-[800] uppercase leading-[0.95] text-text-primary">Ready to Control Your Energy Costs?</h2>
+        <p class="mx-auto mt-5 max-w-xl text-lg text-text-secondary">Talk to a Pivotol AI engineer about deploying OaaS in your facility. Non-invasive assessment. 72-hour timeline. Verified results.</p>
+        <div class="mt-10 flex flex-wrap justify-center gap-4">
+          <a href="https://www.pivotolai.com" class="inline-flex items-center gap-2 rounded-sm bg-amber px-7 py-3.5 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-white shadow-[0_0_24px_rgba(210,105,30,0.3)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-amber2 hover:shadow-[0_0_32px_rgba(210,105,30,0.45)]">
+            Talk to an Engineer
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-border bg-bg2 py-12">
+      <div class="mx-auto max-w-[1200px] px-6 md:px-12">
+        <div class="flex flex-col items-center justify-between gap-6 md:flex-row">
+          <div class="flex items-center gap-3">
+            <img src="/oaas_logoblack.png" alt="OaaS Logo" class="h-6 w-auto logo-light" />
+            <img src="/oaas_logowhite.png" alt="OaaS Logo" class="h-6 w-auto logo-dark" />
+          </div>
+          <div class="flex items-center gap-6">
+            <a href="https://www.pivotolai.com" target="_blank" rel="noopener noreferrer" class="font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary transition hover:text-amber">pivotolai.com</a>
+          </div>
+          <p class="font-mono text-[11px] text-text-tertiary">&copy; 2026 Pivotol AI. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    function updateThemeUI() {
+      var isDark = document.documentElement.classList.contains('dark');
+      document.getElementById('moonIcon').style.display = isDark ? 'none' : 'block';
+      document.getElementById('sunIcon').style.display = isDark ? 'block' : 'none';
+      document.querySelectorAll('.moon-icon').forEach(function(el) { el.style.display = isDark ? 'none' : 'block'; });
+      document.querySelectorAll('.sun-icon').forEach(function(el) { el.style.display = isDark ? 'block' : 'none'; });
+    }
+    function toggleTheme() {
+      document.documentElement.classList.toggle('dark');
+      var isDark = document.documentElement.classList.contains('dark');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      updateThemeUI();
+    }
+    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+    document.getElementById('themeToggleMobile').addEventListener('click', toggleTheme);
+    updateThemeUI();
+  </script>
+</body>
+</html>

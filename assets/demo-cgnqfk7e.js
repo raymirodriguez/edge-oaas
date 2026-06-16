@@ -1,0 +1,158 @@
+import{r as o,j as e,L as z}from"./main-GN3v9NF9.js";import{c as i,C as M,a as
+$}from"./cpu-MSO4YmYM.js";const A=[["path",{d:"m12 19-7-7
+7-7",key:"1l729n"}],["path",{d:"M19 12H5",key:"x3x0zl"}]],P=i
+("arrow-left",A);const q=[["path",{d:"M10 22V7a1 1 0 0 0-1-1H4a2 2 0 0 0-2
+2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5a1 1 0 0 0-1-1H2",key:"1ah6g2"}],
+["rect",{x:"14",y:"2",width:"8",height:"8",rx:"1",key:"88lufb"}]],S=i
+("blocks",q);const H=[["path",{d:"M12 8V4H8",key:"hb8ula"}],["rect",
+{width:"16",height:"12",x:"4",y:"8",rx:"2",key:"enze0r"}],["path",
+{d:"M2 14h2",key:"vft8re"}],["path",{d:"M20 14h2",key:"4cs60a"}],["path",
+{d:"M15 13v2",key:"1xurst"}],["path",{d:"M9 13v2",key:"rq6x2g"}]],B=i
+("bot",H);const T=[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["path",
+{d:"m9 12 2 2 4-4",key:"dzmm74"}]],v=i("circle-check",T);const F=[["circle",
+{cx:"12",cy:"12",r:"10",key:"1mglay"}]],L=i("circle",F);const R=[["path",
+{d:"M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588
+3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z",key:"1oefj6"}],["path",
+{d:"M14 2v5a1 1 0 0 0 1 1h5",key:"wfsgrz"}],["path",
+{d:"M10 9H8",key:"b1mrlr"}],["path",{d:"M16 13H8",key:"t4e002"}],["path",
+{d:"M16 17H8",key:"z1uh3a"}]],y=i("file-text",R);const D=[["path",
+{d:"M21 12a9 9 0 1 1-6.219-8.56",key:"13zald"}]],E=i
+("loader-circle",D);const O=[["path",{d:"m21 21-4.34-4.34",key:"14j7rj"}],
+["circle",{cx:"11",cy:"11",r:"8",key:"4ej97u"}]],Q=i("search",O);const U=[
+["path",{d:"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4
+13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17
+5 19 5a1 1 0 0 1 1 1z",key:"oel41y"}],["path",{d:"m9 12 2 2
+4-4",key:"dzmm74"}]],V=i("shield-check",U);const I=[["path",
+{d:"M12 3v12",key:"1x0j5s"}],["path",{d:"m17 8-5-5-5 5",key:"7q97r8"}],
+["path",{d:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4",key:"ih7n3h"}]],W=i
+("upload",I),Z=["C&E","PCN","FBD","QA/QC","HAZOP","Boolean"];function b(
+{children:t}){return e.jsx("span",{className:"font-mono text-[11px] uppercase
+tracking-[0.18em] text-amber",children:t})}function g(t){return
+["idle","file-selected","uploading","processing","parsing","analysing","building","qa","complete"].indexOf(t)}function
+a(t,s){return g(t)>=g(s)}function l(t,s){return g(t)>g(s)}function c(
+{icon:t,label:s,active:n,complete:d,pulsing:x}){return e.jsxs("div",
+{className:`relative flex flex-col items-center gap-3 rounded-sm border-2 p-5
+transition-all duration-500 $
+{d?"border-success/40 bg-success/5":x?"border-amber bg-amber/10 shadow-
+[0_0_16px_rgba
+(210,105,30,0.35)]":n?"border-amber/60 bg-amber/5":"border-border
+bg-panel"}`,children:[e.jsx("div",{className:`transition-colors duration-500
+${d?"text-success":n?"text-amber":"text-text-tertiary"}`,children:x?e.jsx(E,
+{size:24,className:"animate-spin"}):t}),e.jsx("span",
+{className:`font-mono text-[11px] uppercase tracking-
+[0.15em] transition-colors duration-500 $
+{d?"text-success":n?"text-amber":"text-text-tertiary"}`,children:s}),d&&e.jsx
+(v,{size:14,className:"absolute top-2 right-2 text-success"})]})}function Y(
+{label:t,complete:s,delay:n}){return e.jsxs("div",
+{className:`flex items-center gap-3 rounded-sm border px-4 py-3
+transition-all duration-500 $
+{s?"border-success/40 bg-success/5":"border-border bg-panel"}`,style:
+{transitionDelay:`${n}ms`},children:[s?e.jsx(v,
+{size:14,className:"shrink-0 text-success"}):e.jsx(L,
+{size:14,className:"shrink-0 text-text-tertiary"}),e.jsx("span",
+{className:`font-mono text-[11px] uppercase tracking-[0.15em] $
+{s?"text-success":"text-text-tertiary"}`,children:t})]})}function j(
+{active:t}){return e.jsxs("div",{className:"hidden items-center
+md:flex",children:[e.jsx("div",{className:`h-px w-8 transition-colors
+duration-500 ${t?"bg-amber":"bg-border"}`}),e.jsx("div",{className:`h-2 w-2
+rotate-45 border-t border-r transition-colors duration-500 $
+{t?"border-amber":"border-border"}`})]})}function K(){const[t,s]=o.useState
+("idle"),[n,d]=o.useState(null),x=o.useRef(null),m=o.useRef(
+[]),u=o.useCallback(()=>{m.current.forEach(clearTimeout),m.current=[]},
+[]),f=o.useCallback(()=>{u();const r=
+["uploading","processing","parsing","analysing","building","qa","complete"];let
+p=0;r.forEach(h=>{p+=Math.floor(Math.random()*5001)+3e3;const C=setTimeout(
+()=>s(h),p);m.current.push(C)})},[u]),k=o.useCallback(r=>
+{const p=r.target.files?.[0];if(!p)return;d(p.name),s
+("file-selected");const h=setTimeout(()=>{s("uploading"),f
+()},600);m.current.push(h)},[f]),N=o.useCallback(()=>{u(),s("idle"),d
+(null),x.current&&(x.current.value="")},[u]),w=t==="idle"?"Ready to
+Start":t==="file-selected"?"File
+Selected":t==="complete"?"Complete":"Processing…",_=t==="complete"?"text-success":t==="idle"||t==="file-selected"?"text-text-primary":"text-amber";return
+e.jsx("div",{className:"min-h-screen bg-bg pt-[65px]",children:e.jsxs("div",
+{className:"mx-auto max-w-[1200px] px-6 py-24 md:px-12",children:[e.jsxs(z,
+{to:"/",className:"mb-8 inline-flex items-center gap-2 font-mono text-
+[11px] uppercase tracking-[0.15em] text-text-tertiary transition
+hover:text-amber",children:[e.jsx(P,{size:14}),"Back to Home"]}),e.jsx(b,
+{children:"Demo"}),e.jsx("h1",{className:"mt-3 font-display text-[clamp
+(34px,4vw,54px)] font-[800] leading-[0.95] uppercase
+text-text-primary",children:"Logic Migration Tool"}),e.jsx("p",
+{className:"mt-5 max-w-xl text-lg leading-relaxed
+text-text-secondary",children:"Upload a logic file to begin the automated
+migration workflow. The OaaS model will parse, analyse, and generate all
+output deliverables."}),e.jsxs("div",{className:"mt-12 flex flex-wrap
+items-center gap-4 rounded-sm border border-border bg-panel px-6
+py-5",children:[e.jsxs("div",{className:"mr-auto",children:[e.jsx("span",
+{className:`font-display text-lg font-bold uppercase ${_}`,children:w}),e.jsx
+("p",{className:"mt-0.5 font-mono text-
+[11px] text-text-tertiary",children:t==="idle"?"Please select a file to begin
+the workflow":t==="file-selected"?`${n} — starting
+workflow…`:t==="complete"?"All deliverables generated
+successfully":`Processing ${n}…`})]}),e.jsx("input",
+{ref:x,type:"file",className:"hidden",onChange:k}),e.jsxs("button",{onClick:
+()=>x.current?.click
+(),disabled:t!=="idle",className:"inline-flex items-center gap-2 rounded-sm
+bg-amber px-5 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-
+[0.12em] text-white shadow-[0_0_24px_rgba(210,105,30,0.3)] transition-all
+duration-200 hover:-translate-y-0.5 hover:bg-amber2 hover:shadow-
+[0_0_32px_rgba(210,105,30,0.45)] disabled:pointer-events-none
+disabled:opacity-40",children:[e.jsx(y,{size:14}),"Browse File"]}),e.jsx
+("button",{onClick:N,className:"inline-flex items-center gap-2 rounded-sm
+border border-border px-5 py-2.5 font-mono text-[11px] font-semibold
+uppercase tracking-[0.12em] text-text-tertiary transition hover:border-amber
+hover:text-amber",children:"Reset"})]}),e.jsxs("div",
+{className:"mt-12 overflow-x-auto",children:[e.jsxs("div",
+{className:"flex flex-col items-start gap-6 md:flex-row
+md:items-center",children:[e.jsx(c,{icon:e.jsx(y,
+{size:24}),label:"File Browse",active:a(t,"file-selected"),complete:l
+(t,"file-selected"),pulsing:!1}),e.jsx(j,{active:a(t,"uploading")}),e.jsx(c,
+{icon:e.jsx(W,{size:24}),label:"File Upload",active:a
+(t,"uploading"),complete:l(t,"uploading"),pulsing:t==="uploading"}),e.jsx(j,
+{active:a(t,"processing")}),e.jsx(c,{icon:e.jsx(M,
+{size:24}),label:"Processing",active:a(t,"processing"),complete:l
+(t,"processing"),pulsing:t==="processing"})]}),e.jsxs("div",
+{className:"mt-10 grid gap-6 md:grid-cols-[1fr_auto_1fr]",children:[e.jsxs
+("div",{className:"flex flex-col gap-4",children:[e.jsx(c,{icon:e.jsx(Q,
+{size:24}),label:"Parsing",active:a(t,"parsing"),complete:l
+(t,"parsing"),pulsing:t==="parsing"}),e.jsx(c,{icon:e.jsx($,
+{size:24}),label:"Analysing",active:a(t,"analysing"),complete:l
+(t,"analysing"),pulsing:t==="analysing"})]}),e.jsxs("div",
+{className:`flex flex-col items-center justify-center gap-3 rounded-sm
+border-2 px-10 py-8 transition-all duration-500 ${a
+(t,"parsing")?"border-amber/60 bg-amber/5":"border-border
+bg-panel"}`,children:[e.jsx("span",{className:"text-4xl",children:"🧠"}),e.jsx
+("span",{className:"font-display text-xl font-bold uppercase
+text-text-primary",children:"PivotolAi"}),e.jsx("span",
+{className:"font-display text-xl font-bold uppercase
+text-text-primary -mt-2",children:"Model"}),a(t,"parsing")&&!l(t,"qa")&&e.jsx
+("span",{className:"mt-1 font-mono text-[10px] uppercase tracking-
+[0.15em] text-amber",children:"Active"}),l(t,"qa")&&e.jsx("span",
+{className:"mt-1 font-mono text-[10px] uppercase tracking-
+[0.15em] text-success",children:"Done"})]}),e.jsxs("div",
+{className:"flex flex-col gap-4",children:[e.jsx(c,{icon:e.jsx(S,
+{size:24}),label:"Building Content",active:a(t,"building"),complete:l
+(t,"building"),pulsing:t==="building"}),e.jsxs("div",
+{className:"flex flex-col gap-4",children:[e.jsx(c,{icon:e.jsx(V,
+{size:24}),label:"QA/QC",active:a(t,"qa"),complete:l
+(t,"qa"),pulsing:t==="qa"}),e.jsx(c,{icon:e.jsx(B,
+{size:24}),label:"Agent Validation",active:a(t,"qa"),complete:l
+(t,"qa"),pulsing:t==="qa"})]})]})]})]}),e.jsxs("div",
+{className:"mt-12",children:[e.jsx(b,{children:"Output Deliverables"}),e.jsx
+("div",{className:"mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3
+md:grid-cols-6",children:Z.map((r,p)=>e.jsx(Y,
+{label:r,complete:t==="complete",delay:p*150},r))})]}),e.jsxs("div",
+{className:"mt-16 rounded-sm border border-border bg-panel p-8",children:
+[e.jsx(b,{children:"How It Works"}),e.jsx("div",{className:"mt-6 grid gap-6
+md:grid-cols-3",children:[{step:"01",title:"Select a Logic File",desc:"Browse
+your filesystem and select the logic source file you want to migrate."},
+{step:"02",title:"Automated Processing",desc:"The OaaS model parses,
+analyses, and builds all deliverable content automatically."},
+{step:"03",title:"Download Outputs",desc:"Receive C&E, PCN, FBD, QA/QC,
+HAZOP, and Boolean deliverables — quality-checked and validated."}].map
+(r=>e.jsxs("div",{children:[e.jsx("span",{className:"font-mono text-sm
+font-bold text-amber",children:r.step}),e.jsx("h3",
+{className:"mt-2 font-display text-lg font-bold uppercase
+text-text-primary",children:r.title}),e.jsx("p",{className:"mt-2 text-
+[15px] leading-relaxed
+text-text-tertiary",children:r.desc})]},r.step))})]})]})})}export{K as
+component};
