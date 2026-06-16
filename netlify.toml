@@ -1,2 +1,8 @@
 [build]
   publish = "."
+
+[[redirects]]
+  from = "/api/oaas-query"
+  to = "https://brompton.app.n8n.cloud/webhook/oaas-query"
+  status = 200
+  force = true
