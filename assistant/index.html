@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     /* ── Theme tokens ── */
     :root {
@@ -305,6 +306,17 @@
     .send-btn:disabled { opacity: .4; cursor: not-allowed; }
     .send-btn svg { width: 20px; height: 20px; }
 
+    /* ── Chart ── */
+    .msg.has-chart { max-width: 100%; }
+    .chart-section {
+      margin-top: 12px;
+    }
+    .chart-section canvas {
+      border-radius: 8px;
+      background: var(--theme-bg2);
+      padding: 8px;
+    }
+
     /* ── Scrollbar ── */
     .messages::-webkit-scrollbar { width: 6px; }
     .messages::-webkit-scrollbar-track { background: transparent; }
@@ -442,9 +454,13 @@
       return `<div class="data-section">${table}${cards}</div>`;
     }
 
+    function renderChart(msg) {
+      return `<div class="chart-section"><canvas id="${msg.chartId}"></canvas></div>`;
+    }
+
     function renderMessage(msg) {
       const div = document.createElement("div");
-      div.className = `msg ${msg.role}`;
+      div.className = `msg ${msg.role}${msg.chartData ? " has-chart" : ""}`;
 
       const label = msg.role === "user" ? "You" : "OaaS";
       let bodyContent = "";
@@ -460,7 +476,9 @@
         if (msg.insight) {
           bodyContent += `<div class="insight-block"><div class="insight-label">Business Insight</div>${escapeHtml(msg.insight)}</div>`;
         }
-        if (msg.data) {
+        if (msg.responseType === "chart" && msg.chartData) {
+          bodyContent += renderChart(msg);
+        } else if (msg.data) {
           bodyContent += renderData(msg.data);
         }
       }
@@ -469,11 +487,61 @@
       return div;
     }
 
+    const chartInstances = {};
+
+    function initAllCharts() {
+      const isDark = document.documentElement.classList.contains("dark");
+      const gridColor = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
+      const textColor = isDark ? "#aab2c5" : "#6a6a6a";
+      const monoFont = { family: "'IBM Plex Mono', monospace", size: 10 };
+
+      messages.forEach(msg => {
+        if (!msg.chartData || !msg.chartId) return;
+        const canvas = document.getElementById(msg.chartId);
+        if (!canvas) return;
+        if (chartInstances[msg.chartId]) chartInstances[msg.chartId].destroy();
+
+        chartInstances[msg.chartId] = new Chart(canvas, {
+          type: "line",
+          data: {
+            labels: msg.chartData.map(d => d.t),
+            datasets: [{
+              data: msg.chartData.map(d => d.v),
+              borderColor: "#d2691e",
+              backgroundColor: "rgba(210,105,30,0.12)",
+              borderWidth: 2,
+              pointRadius: msg.chartData.length > 80 ? 0 : 3,
+              pointBackgroundColor: "#d2691e",
+              tension: 0.3,
+              fill: true,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: ctx => String(ctx.parsed.y.toFixed(2))
+                }
+              }
+            },
+            scales: {
+              x: { ticks: { color: textColor, maxTicksLimit: 8, maxRotation: 0, font: monoFont }, grid: { color: gridColor } },
+              y: { ticks: { color: textColor, font: monoFont }, grid: { color: gridColor } }
+            }
+          }
+        });
+      });
+    }
+
     function renderAll() {
       const container = document.getElementById("messages");
       container.innerHTML = "";
       messages.forEach(msg => container.appendChild(renderMessage(msg)));
       scrollToBottom();
+      initAllCharts();
     }
 
     function scrollToBottom() {
@@ -517,7 +585,13 @@
         const answer = data.answer || data.output || raw;
         const assistantMsg = { role: "assistant", text: String(answer) };
         if (data.businessInsight) assistantMsg.insight = data.businessInsight;
-        if (Array.isArray(data.data) && data.data.length > 0) assistantMsg.data = data.data;
+        if (data.responseType) assistantMsg.responseType = data.responseType;
+        if (data.responseType === "chart" && Array.isArray(data.chartData) && data.chartData.length > 0) {
+          assistantMsg.chartData = data.chartData;
+          assistantMsg.chartId = "chart-" + Date.now();
+        } else if (Array.isArray(data.data) && data.data.length > 0) {
+          assistantMsg.data = data.data;
+        }
         messages.push(assistantMsg);
 
       } catch (err) {
