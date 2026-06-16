@@ -427,15 +427,15 @@
 
     function renderData(data) {
       if (!Array.isArray(data) || data.length === 0) return "";
-      const keys = Object.keys(data[0]).filter(k => k !== "_id");
+      const cols = ["timestamp", "value", "metric"];
 
       // Table (desktop)
       let table = '<div class="data-table-wrap"><table class="data-table"><thead><tr>';
-      keys.forEach(k => { table += `<th>${escapeHtml(k)}</th>`; });
+      cols.forEach(k => { table += `<th>${escapeHtml(k)}</th>`; });
       table += "</tr></thead><tbody>";
       data.forEach(row => {
         table += "<tr>";
-        keys.forEach(k => { table += `<td>${escapeHtml(String(row[k] ?? ""))}</td>`; });
+        cols.forEach(k => { table += `<td>${escapeHtml(String(row[k] ?? ""))}</td>`; });
         table += "</tr>";
       });
       table += "</tbody></table></div>";
@@ -444,7 +444,7 @@
       let cards = '<div class="data-cards">';
       data.forEach(row => {
         cards += '<div class="data-card">';
-        keys.forEach(k => {
+        cols.forEach(k => {
           cards += `<div class="data-card-row"><span class="data-card-key">${escapeHtml(k)}</span><span class="data-card-val">${escapeHtml(String(row[k] ?? ""))}</span></div>`;
         });
         cards += "</div>";
@@ -478,9 +478,10 @@
         }
         if (msg.responseType === "chart" && msg.chartData) {
           bodyContent += renderChart(msg);
-        } else if (msg.data) {
+        } else if (msg.responseType === "table" && msg.data) {
           bodyContent += renderData(msg.data);
         }
+        // responseType === "text" (or unset): answer + insight only, nothing else
       }
 
       div.innerHTML = `<div class="msg-label">${label}</div><div class="msg-body">${bodyContent}</div>`;
@@ -582,17 +583,22 @@
         // Remove loading placeholder
         messages.pop();
 
-        const answer = data.answer || data.output || raw;
-        const assistantMsg = { role: "assistant", text: String(answer) };
-        if (data.businessInsight) assistantMsg.insight = data.businessInsight;
-        if (data.responseType) assistantMsg.responseType = data.responseType;
-        if (data.responseType === "chart" && Array.isArray(data.chartData) && data.chartData.length > 0) {
-          assistantMsg.chartData = data.chartData;
-          assistantMsg.chartId = "chart-" + Date.now();
-        } else if (Array.isArray(data.data) && data.data.length > 0) {
-          assistantMsg.data = data.data;
+        if (data.success === false) {
+          messages.push({ role: "assistant", error: true, text: data.error || "The query failed." });
+        } else {
+          const answer = data.answer || data.output || raw;
+          const assistantMsg = { role: "assistant", text: String(answer) };
+          if (data.businessInsight) assistantMsg.insight = data.businessInsight;
+          assistantMsg.responseType = data.responseType || "text";
+
+          if (data.responseType === "chart" && Array.isArray(data.chartData) && data.chartData.length > 0) {
+            assistantMsg.chartData = data.chartData;
+            assistantMsg.chartId = "chart-" + Date.now();
+          } else if (data.responseType === "table" && Array.isArray(data.data) && data.data.length > 0) {
+            assistantMsg.data = data.data;
+          }
+          messages.push(assistantMsg);
         }
-        messages.push(assistantMsg);
 
       } catch (err) {
         messages.pop();
