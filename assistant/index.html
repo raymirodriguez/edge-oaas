@@ -336,12 +336,16 @@
       border-radius: 3px;
     }
 
-    /* ── Clear chat button ── */
-    .clear-btn {
+    /* ── Header left buttons ── */
+    .header-left {
       position: absolute;
       left: 16px;
       top: 50%;
       transform: translateY(-50%);
+      display: flex;
+      gap: 8px;
+    }
+    .clear-btn, .session-btn {
       background: none;
       border: 1px solid var(--theme-border);
       border-radius: 8px;
@@ -356,15 +360,21 @@
       transition: border-color .15s, color .15s;
     }
     .clear-btn:hover { border-color: #e05555; color: #e05555; }
+    .session-btn:hover { border-color: var(--color-amber); color: var(--color-amber); }
   </style>
 </head>
 <body>
   <div class="app">
     <!-- Header -->
     <div class="header">
-      <button class="clear-btn" onclick="clearChat()" title="Clear chat">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-      </button>
+      <div class="header-left">
+        <button class="clear-btn" onclick="clearChat()" title="Clear chat">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        </button>
+        <button class="session-btn" onclick="newSession()" title="New session (re-authenticate)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
+      </div>
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="/oaas_logowhite.png" />
         <img src="/oaas_logoblack.png" alt="OaaS" id="headerLogo" />
@@ -409,7 +419,7 @@
       }
       return id;
     }
-    const sessionId = getSessionId();
+    let sessionId = getSessionId();
 
     // ── Theme ──
     function initTheme() {
@@ -645,6 +655,15 @@
       messages = [{ role: "assistant", text: "Hi, I'm OaaS. Ask me about customers or operational data." }];
       saveMessages();
       renderAll();
+    }
+
+    function newSession() {
+      sessionId = (typeof crypto !== "undefined" && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2) + Date.now().toString(36) + Math.random().toString(36).slice(2);
+      sessionStorage.setItem(SESSION_KEY, sessionId);
+      document.getElementById("sessionBadge").textContent = "session: " + sessionId.slice(0, 8);
+      clearChat();
     }
 
     // ── Input handling ──
