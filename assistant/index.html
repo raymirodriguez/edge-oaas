@@ -1027,6 +1027,113 @@
       return tmp.toDataURL("image/png");
     }
 
+    function r1(v) { return (Math.round(v * 10) / 10).toString(); }
+    function r2(v) { return (Math.round(v * 100) / 100).toString(); }
+
+    function computeInsights(msg, type) {
+      const RATE = 0.12;
+      const out = { stats: null, trend: null, anomalies: [], peakItems: [], costEstimate: null, recommendations: [] };
+
+      if (type === "chart" && msg.chartData && msg.chartData.length > 0) {
+        const vals = msg.chartData.map(d => d.v);
+        const n = vals.length;
+        const sorted = [...vals].sort((a, b) => a - b);
+        const mean = vals.reduce((s, v) => s + v, 0) / n;
+        const variance = vals.reduce((s, v) => s + (v - mean) ** 2, 0) / n;
+        const stdDev = Math.sqrt(variance);
+
+        out.stats = { "Min": r1(sorted[0]) + " A", "Max": r1(sorted[n - 1]) + " A", "Avg": r1(mean) + " A", "Std Dev": r1(stdDev) + " A" };
+
+        const fAvg = vals.slice(0, Math.floor(n / 3)).reduce((s, v) => s + v, 0) / Math.floor(n / 3);
+        const lAvg = vals.slice(Math.floor(n * 2 / 3)).reduce((s, v) => s + v, 0) / Math.ceil(n / 3);
+        const chg = ((lAvg - fAvg) / fAvg) * 100;
+        out.trend = {
+          direction: chg > 5 ? "Increasing ▲" : chg < -5 ? "Decreasing ▼" : "Stable →",
+          detail: Math.abs(chg) < 5 ? "Load is stable over the observed period."
+            : `Average load ${chg > 0 ? "increased" : "decreased"} ${Math.abs(Math.round(chg))}% from start to end of period.`,
+        };
+
+        const threshold = mean + 2 * stdDev;
+        out.anomalies = msg.chartData.filter(d => d.v > threshold).map(d => `${d.t}: ${r1(d.v)} A`).slice(0, 6);
+        out.peakItems = [...msg.chartData].sort((a, b) => b.v - a.v).slice(0, 3).map(d => `${d.t}  →  ${r1(d.v)} A`);
+
+        const totalKwh = vals.reduce((s, v) => s + (480 * v / 1000) * (1 / 60), 0);
+        out.costEstimate = { label: "Est. Energy (period)", kwh: r2(totalKwh), cost: r2(totalKwh * RATE), rate: RATE, note: "Assumes 480 V DC nominal" };
+
+        if (out.anomalies.length > 0)
+          out.recommendations.push(`${out.anomalies.length} load spike(s) detected above ${Math.round(threshold)} A — investigate equipment cycling at peak times.`);
+        if (Math.abs(chg) > 5)
+          out.recommendations.push(`Load is ${chg > 0 ? "increasing" : "decreasing"} — verify this aligns with the planned production schedule.`);
+        if (stdDev / mean > 0.5)
+          out.recommendations.push("High variability detected (σ/μ > 0.5) — intermittent heavy equipment is likely driving demand peaks.");
+        const pctAbove = Math.round(vals.filter(v => v > mean).length / n * 100);
+        out.recommendations.push(`${pctAbove}% of readings exceed the period average — demand smoothing strategies could reduce peak tariffs.`);
+      }
+
+      if (type === "heatmap" && msg.heatmapData) {
+        const { rows, cols, values: grid } = msg.heatmapData;
+        const flat = grid.flat();
+        const n = flat.length;
+        const sorted = [...flat].sort((a, b) => a - b);
+        const mean = flat.reduce((s, v) => s + v, 0) / n;
+        const variance = flat.reduce((s, v) => s + (v - mean) ** 2, 0) / n;
+        const stdDev = Math.sqrt(variance);
+
+        let peakV = -Infinity, peakR = "", peakC = "", minV = Infinity, minR = "", minC = "";
+        grid.forEach((row, ri) => row.forEach((v, ci) => {
+          if (v > peakV) { peakV = v; peakR = rows[ri]; peakC = cols[ci]; }
+          if (v < minV) { minV = v; minR = rows[ri]; minC = cols[ci]; }
+        }));
+
+        const bhIdx = cols.reduce((acc, c, i) => { const h = parseInt(c); if (h >= 8 && h < 18) acc.push(i); return acc; }, []);
+        const bhVals = grid.flatMap((row, ri) => bhIdx.map(ci => grid[ri][ci]));
+        const offVals = grid.flatMap((row, ri) => row.filter((_, ci) => !bhIdx.includes(ci)));
+        const bhAvg = bhVals.reduce((s, v) => s + v, 0) / bhVals.length;
+        const offAvg = offVals.reduce((s, v) => s + v, 0) / offVals.length;
+        const bhPremium = Math.round(((bhAvg - offAvg) / offAvg) * 100);
+
+        const wkdayFlat = grid.filter((_, ri) => !["Sat", "Sun"].includes(rows[ri])).flat();
+        const wkendFlat = grid.filter((_, ri) => ["Sat", "Sun"].includes(rows[ri])).flat();
+        const wkdayAvg = Math.round(wkdayFlat.reduce((s, v) => s + v, 0) / wkdayFlat.length);
+        const wkendAvg = wkendFlat.length ? Math.round(wkendFlat.reduce((s, v) => s + v, 0) / wkendFlat.length) : null;
+
+        out.stats = { "Min": Math.round(sorted[0]) + " kW", "Max": Math.round(sorted[n - 1]) + " kW", "Avg": Math.round(mean) + " kW", "Std Dev": Math.round(stdDev) + " kW" };
+        out.trend = {
+          direction: "Business Hours ▲",
+          detail: `Business hours avg ${Math.round(bhAvg)} kW vs off-hours avg ${Math.round(offAvg)} kW (${bhPremium}% higher).`,
+        };
+        out.peakItems = [
+          `Peak: ${peakR} ${peakC}  →  ${peakV} kW`,
+          `Minimum: ${minR} ${minC}  →  ${minV} kW`,
+          `Weekday avg: ${wkdayAvg} kW`,
+          ...(wkendAvg !== null ? [`Weekend avg: ${wkendAvg} kW`] : []),
+        ];
+
+        const totalKwh = Math.round(flat.reduce((s, v) => s + v * 2, 0));
+        out.costEstimate = { label: "Est. Weekly Energy", kwh: totalKwh.toLocaleString(), cost: Math.round(totalKwh * RATE).toLocaleString(), rate: RATE, note: "kW values × 2 h/cell × 7 days" };
+
+        out.recommendations.push(`Peak load of ${peakV} kW at ${peakR} ${peakC} — prioritize OaaS optimization during this window.`);
+        if (bhPremium > 20) out.recommendations.push(`Business hours consumption is ${bhPremium}% above off-hours — significant demand management opportunity exists.`);
+        if (wkendAvg !== null && wkendAvg / wkdayAvg > 0.4)
+          out.recommendations.push(`Weekend loads average ${wkendAvg} kW — review non-production equipment for scheduled shutdown opportunities.`);
+        out.recommendations.push(`Baseline floor of ${minV} kW at ${minR} ${minC} — this represents phantom/standby load that can be targeted for reduction.`);
+      }
+
+      if (type === "table" && msg.data && msg.data.length > 0) {
+        const numCol = Object.keys(msg.data[0]).find(k => k === "value") ||
+                       Object.keys(msg.data[0]).find(k => msg.data.some(r => !isNaN(parseFloat(r[k]))));
+        if (numCol) {
+          const vals = msg.data.map(r => parseFloat(r[numCol])).filter(v => !isNaN(v));
+          const sorted = [...vals].sort((a, b) => a - b);
+          const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
+          out.stats = { "Count": vals.length.toString(), "Min": r1(sorted[0]), "Max": r1(sorted[sorted.length - 1]), "Avg": r1(mean) };
+        }
+        out.recommendations.push(`Dataset contains ${msg.data.length} records — export to Edge Stream for deeper trend analysis.`);
+      }
+
+      return out;
+    }
+
     function generatePDF(type, id) {
       if (!window.jspdf) { alert("PDF library not loaded yet. Please try again."); return; }
       const { jsPDF } = window.jspdf;
@@ -1038,103 +1145,199 @@
       if (!msg) return;
 
       const doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
-      const pageW = doc.internal.pageSize.getWidth();
-      const pageH = doc.internal.pageSize.getHeight();
-      const margin = 18;
-      const contentW = pageW - margin * 2;
+      const PW = doc.internal.pageSize.getWidth();
+      const PH = doc.internal.pageSize.getHeight();
+      const M = 18;
+      const CW = PW - M * 2;
       const now = new Date();
+      const AMBER = [210, 105, 30];
+      const AMBER_LIGHT = [253, 246, 238];
 
-      // ── Header bar ──
-      doc.setFillColor(210, 105, 30);
-      doc.rect(0, 0, pageW, 13, "F");
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.setTextColor(255, 255, 255);
-      doc.text("OaaS — Energy Data Report", margin, 9);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.text(now.toLocaleString(), pageW - margin, 9, { align: "right" });
+      function addPage() {
+        doc.addPage();
+        doc.setFillColor(...AMBER);
+        doc.rect(0, 0, PW, 8, "F");
+        doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(255, 255, 255);
+        doc.text("OaaS — Energy Data Report (cont.)", M, 5.5);
+        return 14;
+      }
+      function chk(y, need) { return y + need > PH - 14 ? addPage() : y; }
+
+      function secTitle(title, y) {
+        y = chk(y, 10);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(...AMBER);
+        doc.text(title.toUpperCase(), M, y);
+        doc.setDrawColor(...AMBER); doc.setLineWidth(0.3);
+        doc.line(M + doc.getTextWidth(title.toUpperCase()) + 2, y - 0.5, PW - M, y - 0.5);
+        return y + 5;
+      }
+      function divider(y) {
+        doc.setDrawColor(210, 210, 205); doc.setLineWidth(0.3);
+        doc.line(M, y, PW - M, y);
+        return y + 5;
+      }
+
+      // ── Header ──
+      doc.setFillColor(...AMBER);
+      doc.rect(0, 0, PW, 13, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(255, 255, 255);
+      doc.text("OaaS — Energy Data Report", M, 9);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      doc.text(now.toLocaleString(), PW - M, 9, { align: "right" });
 
       let y = 20;
 
       // ── Meta ──
-      if (selectedOrg) {
-        doc.setFontSize(8);
-        doc.setTextColor(100, 100, 100);
-        doc.text("Organization: " + selectedOrg.name, margin, y);
-        y += 5;
+      doc.setFontSize(8); doc.setTextColor(100, 100, 100);
+      const meta = [selectedOrg ? "Organization: " + selectedOrg.name : null, "Date: " + now.toLocaleDateString()].filter(Boolean).join("    ·    ");
+      doc.text(meta, M, y); y += 7;
+
+      // ── Summary ──
+      y = secTitle("Summary", y);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(40, 40, 40);
+      const sumLines = doc.splitTextToSize(msg.text || "", CW).slice(0, 8);
+      y = chk(y, sumLines.length * 4.5);
+      doc.text(sumLines, M, y); y += sumLines.length * 4.5 + 4;
+
+      if (msg.insight) {
+        const iLines = doc.splitTextToSize(msg.insight, CW - 10);
+        const bh = 7 + iLines.length * 4.5;
+        y = chk(y, bh + 4);
+        doc.setFillColor(...AMBER_LIGHT); doc.roundedRect(M, y, CW, bh, 2, 2, "F");
+        doc.setDrawColor(...AMBER); doc.setLineWidth(0.6); doc.line(M, y, M, y + bh);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(...AMBER);
+        doc.text("LLM INSIGHT", M + 4, y + 4.5);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(50, 50, 50);
+        doc.text(iLines, M + 4, y + 8.5); y += bh + 5;
       }
 
-      // ── Context text ──
-      if (msg.text) {
-        doc.setFontSize(9);
-        doc.setTextColor(40, 40, 40);
-        const lines = doc.splitTextToSize(msg.text, contentW);
-        const cap = lines.slice(0, 5);
-        doc.text(cap, margin, y);
-        y += cap.length * 4.5 + 3;
-      }
+      y = divider(y);
 
-      // ── Divider ──
-      doc.setDrawColor(210, 105, 30);
-      doc.setLineWidth(0.4);
-      doc.line(margin, y, pageW - margin, y);
-      y += 6;
-
-      // ── Chart or heat map image ──
-      if ((type === "chart" || type === "heatmap") ) {
-        const canvasId = type === "chart" ? msg.chartId : msg.heatmapId;
-        const canvas = document.getElementById(canvasId);
+      // ── Visual ──
+      if (type === "chart" || type === "heatmap") {
+        const canvas = document.getElementById(type === "chart" ? msg.chartId : msg.heatmapId);
         if (canvas && canvas.width > 0) {
+          y = secTitle(type === "chart" ? "Chart" : "Heat Map", y);
           const imgData = canvasWithBg(canvas, "#f5f5f0");
-          const ratio = canvas.width / canvas.height;
-          const imgW = contentW;
-          const imgH = Math.min(imgW / ratio, 110);
-          doc.addImage(imgData, "PNG", margin, y, imgW, imgH);
+          const imgH = Math.min(CW / (canvas.width / canvas.height), 95);
+          y = chk(y, imgH + 4);
+          doc.addImage(imgData, "PNG", M, y, CW, imgH);
           y += imgH + 6;
         }
       }
-
-      // ── Table ──
       if (type === "table" && msg.data) {
+        y = secTitle("Data Table", y);
         const cols = Object.keys(msg.data[0] || {});
         doc.autoTable({
           head: [cols.map(c => c.toUpperCase())],
           body: msg.data.map(row => cols.map(c => String(row[c] ?? ""))),
-          startY: y,
-          margin: { left: margin, right: margin },
+          startY: y, margin: { left: M, right: M },
           styles: { fontSize: 8, cellPadding: 2 },
-          headStyles: { fillColor: [210, 105, 30], textColor: [255, 255, 255], fontStyle: "bold" },
+          headStyles: { fillColor: AMBER, textColor: [255, 255, 255], fontStyle: "bold" },
           alternateRowStyles: { fillColor: [245, 245, 240] },
         });
         y = doc.lastAutoTable.finalY + 6;
       }
 
-      // ── Business insight ──
-      if (msg.insight) {
-        const insightLines = doc.splitTextToSize(msg.insight, contentW - 10);
-        const boxH = 8 + insightLines.length * 4.5;
-        doc.setFillColor(253, 246, 238);
-        doc.roundedRect(margin, y, contentW, boxH, 2, 2, "F");
-        doc.setDrawColor(210, 105, 30);
-        doc.setLineWidth(0.6);
-        doc.line(margin, y, margin, y + boxH);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(7);
-        doc.setTextColor(210, 105, 30);
-        doc.text("BUSINESS INSIGHT", margin + 4, y + 5);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(8);
-        doc.setTextColor(50, 50, 50);
-        doc.text(insightLines, margin + 4, y + 9.5);
-        y += boxH + 6;
+      y = divider(y);
+
+      // ── Compute insights ──
+      const ins = computeInsights(msg, type);
+
+      // ── Key Statistics ──
+      if (ins.stats) {
+        y = secTitle("Key Statistics", y);
+        const keys = Object.keys(ins.stats);
+        const bw = (CW - (keys.length - 1) * 4) / keys.length;
+        y = chk(y, 18);
+        keys.forEach((k, i) => {
+          const bx = M + i * (bw + 4);
+          doc.setFillColor(245, 245, 240); doc.roundedRect(bx, y, bw, 14, 2, 2, "F");
+          doc.setDrawColor(205, 205, 198); doc.setLineWidth(0.3); doc.roundedRect(bx, y, bw, 14, 2, 2, "S");
+          doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(120, 120, 120);
+          doc.text(k.toUpperCase(), bx + bw / 2, y + 5, { align: "center" });
+          doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...AMBER);
+          doc.text(ins.stats[k], bx + bw / 2, y + 11, { align: "center" });
+        });
+        y += 20;
       }
 
-      // ── Footer ──
-      doc.setFontSize(7);
-      doc.setTextColor(160, 160, 160);
-      doc.text("Generated by OaaS — Pivotol AI", margin, pageH - 8);
-      doc.text("pivotolai.com", pageW - margin, pageH - 8, { align: "right" });
+      // ── Trend & Analysis ──
+      if (ins.trend || ins.anomalies.length > 0 || ins.peakItems.length > 0) {
+        y = secTitle("Trend & Analysis", y);
+        if (ins.trend) {
+          y = chk(y, 12);
+          doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(40, 40, 40);
+          const tLabel = "Trend: ";
+          doc.text(tLabel, M, y);
+          doc.setTextColor(...AMBER);
+          doc.text(ins.trend.direction, M + doc.getTextWidth(tLabel), y);
+          y += 5;
+          doc.setFont("helvetica", "normal"); doc.setTextColor(80, 80, 80);
+          const dLines = doc.splitTextToSize(ins.trend.detail, CW - 4);
+          doc.text(dLines, M, y); y += dLines.length * 4.5 + 3;
+        }
+        if (ins.peakItems.length > 0) {
+          y = chk(y, ins.peakItems.length * 5 + 6);
+          doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(40, 40, 40);
+          doc.text("Peak Periods:", M, y); y += 5;
+          doc.setFont("helvetica", "normal"); doc.setTextColor(80, 80, 80);
+          ins.peakItems.forEach(item => { doc.text("• " + item, M + 4, y); y += 4.5; });
+          y += 2;
+        }
+        if (ins.anomalies.length > 0) {
+          y = chk(y, ins.anomalies.length * 5 + 6);
+          doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(180, 55, 55);
+          doc.text("Anomalies Detected (" + ins.anomalies.length + "):", M, y); y += 5;
+          doc.setFont("helvetica", "normal"); doc.setTextColor(80, 80, 80);
+          ins.anomalies.forEach(a => { doc.text("! " + a, M + 4, y); y += 4.5; });
+          y += 2;
+        }
+      }
+
+      // ── Cost Estimate ──
+      if (ins.costEstimate) {
+        y = chk(y, 32);
+        y = secTitle("Energy Cost Estimate", y);
+        const ce = ins.costEstimate;
+        doc.setFillColor(...AMBER_LIGHT); doc.roundedRect(M, y, CW, 20, 2, 2, "F");
+        doc.setDrawColor(...AMBER); doc.setLineWidth(0.4); doc.roundedRect(M, y, CW, 20, 2, 2, "S");
+
+        doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(80, 80, 80);
+        doc.text(ce.label + ":", M + 6, y + 7);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(...AMBER);
+        doc.text(ce.kwh + " kWh", M + 6, y + 15);
+
+        doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(80, 80, 80);
+        doc.text("Estimated Cost (@ $" + ce.rate + "/kWh):", M + CW / 2, y + 7);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(...AMBER);
+        doc.text("$" + ce.cost, M + CW / 2, y + 15);
+
+        doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(140, 140, 140);
+        doc.text("* " + ce.note, M + 6, y + 19.5);
+        y += 26;
+      }
+
+      // ── Recommendations ──
+      if (ins.recommendations.length > 0) {
+        y = secTitle("Recommendations", y);
+        ins.recommendations.forEach((rec, i) => {
+          const rLines = doc.splitTextToSize((i + 1) + ". " + rec, CW - 6);
+          y = chk(y, rLines.length * 4.5 + 3);
+          doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(40, 40, 40);
+          doc.text(rLines, M + 3, y); y += rLines.length * 4.5 + 3;
+        });
+      }
+
+      // ── Footer on all pages ──
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let p = 1; p <= totalPages; p++) {
+        doc.setPage(p);
+        doc.setFontSize(7); doc.setTextColor(160, 160, 160);
+        doc.text("Generated by OaaS — Pivotol AI", M, PH - 6);
+        doc.text("Page " + p + " of " + totalPages, PW / 2, PH - 6, { align: "center" });
+        doc.text("pivotolai.com", PW - M, PH - 6, { align: "right" });
+      }
 
       doc.save("oaas-report-" + now.toISOString().slice(0, 10) + ".pdf");
     }
