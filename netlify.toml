@@ -1,8 +1,17 @@
 [build]
   publish = "."
 
+[functions]
+  directory = "netlify/functions"
+
 [[redirects]]
   from = "/api/oaas-query"
   to = "https://brompton.app.n8n.cloud/webhook/oaas-query"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/log-execution"
+  to = "/.netlify/functions/log-execution"
   status = 200
   force = true
