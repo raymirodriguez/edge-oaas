@@ -996,6 +996,8 @@
       const text = input.value.trim();
       if (!text || isLoading) return;
 
+      const wantsHeatMap = /heat\s*map/i.test(text);
+
       input.value = "";
       autoResizeInput();
 
@@ -1043,19 +1045,23 @@
             assistantMsg.heatmapId = "heatmap-" + Date.now();
           }
 
-          // Client-side heat map trigger
-          if (!assistantMsg.heatmapData && /heat\s*map/i.test(text)) {
-            assistantMsg.responseType = "heatmap";
-            assistantMsg.heatmapData = generateDemoHeatmapData();
-            assistantMsg.heatmapId = "heatmap-" + Date.now();
-          }
-
           messages.push(assistantMsg);
         }
 
       } catch (err) {
         messages.pop();
         messages.push({ role: "assistant", error: true, text: err.message || "Something went wrong. Please try again." });
+      }
+
+      // Heat map trigger — fires after API response regardless of success/failure
+      if (wantsHeatMap) {
+        const lastMsg = messages[messages.length - 1];
+        if (lastMsg && lastMsg.role === "assistant" && !lastMsg.heatmapData) {
+          lastMsg.responseType = "heatmap";
+          lastMsg.heatmapData = generateDemoHeatmapData();
+          lastMsg.heatmapId = "heatmap-" + Date.now();
+          delete lastMsg.error;
+        }
       }
 
       isLoading = false;
