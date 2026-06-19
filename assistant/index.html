@@ -472,6 +472,10 @@
       padding: 8px;
     }
 
+    /* ── Heat map ── */
+    .heatmap-section { margin-top: 12px; overflow-x: auto; }
+    .heatmap-section canvas { display: block; max-width: 100%; border-radius: 8px; }
+
     /* ── Session badge ── */
     .session-badge {
       font-family: var(--font-mono);
@@ -749,7 +753,7 @@
 
     function renderMessage(msg) {
       const div = document.createElement("div");
-      div.className = `msg ${msg.role}${msg.chartData ? " has-chart" : ""}`;
+      div.className = `msg ${msg.role}${(msg.chartData || msg.heatmapData) ? " has-chart" : ""}`;
 
       const label = msg.role === "user" ? "You" : "OaaS";
       let bodyContent = "";
@@ -769,6 +773,8 @@
           bodyContent += renderChart(msg);
         } else if (msg.responseType === "table" && msg.data) {
           bodyContent += renderData(msg.data);
+        } else if (msg.responseType === "heatmap" && msg.heatmapData) {
+          bodyContent += renderHeatMap(msg);
         }
       }
 
@@ -777,6 +783,7 @@
     }
 
     const chartInstances = {};
+    const heatmapInstances = {};
 
     function initAllCharts() {
       const isDark = document.documentElement.classList.contains("dark");
@@ -821,12 +828,161 @@
       });
     }
 
+    function generateDemoHeatmapData() {
+      const rows = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      const cols = ["00h", "02h", "04h", "06h", "08h", "10h", "12h", "14h", "16h", "18h", "20h", "22h"];
+      const values = [
+        [118, 108, 104, 112, 275, 418, 458, 472, 448, 376, 218, 158],
+        [122, 110, 106, 116, 283, 428, 466, 478, 453, 383, 223, 163],
+        [120, 107, 103, 113, 276, 413, 453, 468, 443, 373, 216, 156],
+        [123, 109, 107, 115, 281, 423, 460, 476, 450, 380, 220, 160],
+        [125, 112, 108, 118, 288, 438, 470, 483, 458, 388, 228, 168],
+        [ 93,  86,  81,  89, 138, 178, 198, 193, 173, 148, 128, 108],
+        [ 84,  77,  74,  81, 118, 153, 173, 166, 148, 128, 113,  97],
+      ];
+      return { rows, cols, values, label: "Energy Consumption (kW)" };
+    }
+
+    function renderHeatMap(msg) {
+      return `<div class="heatmap-section"><canvas id="${msg.heatmapId}"></canvas></div>`;
+    }
+
+    function drawHeatMap(canvasId, heatmapData) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+
+      const { rows, cols, values, label } = heatmapData;
+      const isDark = document.documentElement.classList.contains("dark");
+      const textColor = isDark ? "#aab2c5" : "#6a6a6a";
+      const borderColor = isDark ? "#1e2535" : "#d0d0c8";
+      const bgColor = isDark ? "#131720" : "#eaeae5";
+
+      const LABEL_W = 52;
+      const COL_H = 28;
+      const TOP_PAD = label ? 30 : 8;
+      const RIGHT_PAD = 8;
+      const LEGEND_H = 14;
+      const LEGEND_PAD = 38;
+
+      const containerW = (canvas.parentElement ? canvas.parentElement.clientWidth : 600) - 2;
+      const cellW = Math.max(28, Math.floor((containerW - LABEL_W - RIGHT_PAD) / cols.length));
+      const cellH = 30;
+      const gridW = cols.length * cellW;
+      const gridH = rows.length * cellH;
+
+      canvas.width = LABEL_W + gridW + RIGHT_PAD;
+      canvas.height = TOP_PAD + gridH + COL_H + LEGEND_PAD;
+      canvas.style.maxWidth = "100%";
+
+      const ctx = canvas.getContext("2d");
+
+      function lerp(a, b, t) { return Math.round(a + (b - a) * Math.max(0, Math.min(1, t))); }
+      function getColor(v, mn, mx) {
+        if (mx === mn) return "#d2691e";
+        const t = (v - mn) / (mx - mn);
+        let r, g, b;
+        if (t < 0.25) {
+          const p = t / 0.25;
+          r = lerp(30, 44, p); g = lerp(90, 160, p); b = lerp(200, 210, p);
+        } else if (t < 0.5) {
+          const p = (t - 0.25) / 0.25;
+          r = lerp(44, 255, p); g = lerp(160, 200, p); b = lerp(210, 50, p);
+        } else if (t < 0.75) {
+          const p = (t - 0.5) / 0.25;
+          r = lerp(255, 210, p); g = lerp(200, 105, p); b = lerp(50, 30, p);
+        } else {
+          const p = (t - 0.75) / 0.25;
+          r = lerp(210, 160, p); g = lerp(105, 20, p); b = lerp(30, 20, p);
+        }
+        return `rgb(${r},${g},${b})`;
+      }
+
+      let min = Infinity, max = -Infinity;
+      values.forEach(row => row.forEach(v => { if (v < min) min = v; if (v > max) max = v; }));
+
+      // Background
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Title label
+      if (label) {
+        ctx.font = '500 10px "IBM Plex Mono"';
+        ctx.fillStyle = "#d2691e";
+        ctx.textAlign = "left";
+        ctx.fillText(label.toUpperCase(), LABEL_W, 17);
+      }
+
+      // Cells
+      values.forEach((row, ri) => {
+        row.forEach((v, ci) => {
+          const x = LABEL_W + ci * cellW;
+          const y = TOP_PAD + ri * cellH;
+          ctx.fillStyle = getColor(v, min, max);
+          ctx.fillRect(x + 1, y + 1, cellW - 2, cellH - 2);
+          if (cellW >= 38 && cellH >= 22) {
+            ctx.font = '9px "IBM Plex Mono"';
+            ctx.fillStyle = "rgba(255,255,255,0.88)";
+            ctx.textAlign = "center";
+            ctx.fillText(String(v), x + cellW / 2, y + cellH / 2 + 3);
+          }
+        });
+      });
+
+      // Row labels
+      ctx.font = '10px "IBM Plex Mono"';
+      ctx.fillStyle = textColor;
+      ctx.textAlign = "right";
+      rows.forEach((rowLabel, ri) => {
+        ctx.fillText(rowLabel, LABEL_W - 6, TOP_PAD + ri * cellH + cellH / 2 + 4);
+      });
+
+      // Col labels
+      ctx.font = '9px "IBM Plex Mono"';
+      ctx.fillStyle = textColor;
+      ctx.textAlign = "center";
+      cols.forEach((col, ci) => {
+        ctx.fillText(col, LABEL_W + ci * cellW + cellW / 2, TOP_PAD + gridH + 16);
+      });
+
+      // Legend gradient
+      const legendX = LABEL_W;
+      const legendY = TOP_PAD + gridH + COL_H + 6;
+      const legendW = Math.min(gridW, 200);
+      const steps = 80;
+      for (let i = 0; i < steps; i++) {
+        const v = min + (max - min) * (i / steps);
+        ctx.fillStyle = getColor(v, min, max);
+        ctx.fillRect(legendX + (i / steps) * legendW, legendY, Math.ceil(legendW / steps) + 1, LEGEND_H);
+      }
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(legendX, legendY, legendW, LEGEND_H);
+
+      // Legend min / mid / max labels
+      ctx.font = '9px "IBM Plex Mono"';
+      ctx.fillStyle = textColor;
+      ctx.textAlign = "left";
+      ctx.fillText(String(min), legendX, legendY + LEGEND_H + 12);
+      ctx.textAlign = "right";
+      ctx.fillText(String(max), legendX + legendW, legendY + LEGEND_H + 12);
+      ctx.textAlign = "center";
+      ctx.fillText(String(Math.round((min + max) / 2)), legendX + legendW / 2, legendY + LEGEND_H + 12);
+    }
+
+    function initAllHeatMaps() {
+      messages.forEach(msg => {
+        if (!msg.heatmapData || !msg.heatmapId) return;
+        drawHeatMap(msg.heatmapId, msg.heatmapData);
+      });
+    }
+
     function renderAll() {
       const container = document.getElementById("messages");
       container.innerHTML = "";
       messages.forEach(msg => container.appendChild(renderMessage(msg)));
       scrollToBottom();
       initAllCharts();
+      initAllHeatMaps();
     }
 
     function scrollToBottom() {
@@ -882,7 +1038,18 @@
             assistantMsg.chartId = "chart-" + Date.now();
           } else if (data.responseType === "table" && Array.isArray(data.data) && data.data.length > 0) {
             assistantMsg.data = data.data;
+          } else if (data.responseType === "heatmap" && data.heatmapData) {
+            assistantMsg.heatmapData = data.heatmapData;
+            assistantMsg.heatmapId = "heatmap-" + Date.now();
           }
+
+          // Client-side heat map trigger
+          if (!assistantMsg.heatmapData && /heat\s*map/i.test(text)) {
+            assistantMsg.responseType = "heatmap";
+            assistantMsg.heatmapData = generateDemoHeatmapData();
+            assistantMsg.heatmapId = "heatmap-" + Date.now();
+          }
+
           messages.push(assistantMsg);
         }
 
