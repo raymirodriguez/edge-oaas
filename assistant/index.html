@@ -9,6 +9,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
     /* ── Theme tokens ── */
     :root {
@@ -476,6 +478,27 @@
     .heatmap-section { margin-top: 12px; overflow-x: auto; }
     .heatmap-section canvas { display: block; max-width: 100%; border-radius: 8px; }
 
+    /* ── PDF button ── */
+    .pdf-btn-wrap { margin-top: 10px; }
+    .pdf-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: 1px solid var(--theme-border);
+      border-radius: 8px;
+      background: none;
+      color: var(--theme-text-tertiary);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: border-color .15s, color .15s, background-color .15s;
+    }
+    .pdf-btn:hover { border-color: var(--color-amber); color: var(--color-amber); background: rgba(210,105,30,0.06); }
+    .pdf-btn svg { width: 12px; height: 12px; flex-shrink: 0; }
+
     /* ── Session badge ── */
     .session-badge {
       font-family: var(--font-mono);
@@ -753,7 +776,7 @@
 
     function renderMessage(msg) {
       const div = document.createElement("div");
-      div.className = `msg ${msg.role}${(msg.chartData || msg.heatmapData) ? " has-chart" : ""}`;
+      div.className = `msg ${msg.role}${(msg.chartData || msg.heatmapData || msg.data) ? " has-chart" : ""}`;
 
       const label = msg.role === "user" ? "You" : "OaaS";
       let bodyContent = "";
@@ -771,10 +794,13 @@
         }
         if (msg.responseType === "chart" && msg.chartData) {
           bodyContent += renderChart(msg);
+          bodyContent += renderPdfBtn("chart", msg.chartId);
         } else if (msg.responseType === "table" && msg.data) {
           bodyContent += renderData(msg.data);
+          bodyContent += renderPdfBtn("table", msg.tableId);
         } else if (msg.responseType === "heatmap" && msg.heatmapData) {
           bodyContent += renderHeatMap(msg);
+          bodyContent += renderPdfBtn("heatmap", msg.heatmapId);
         }
       }
 
@@ -982,6 +1008,137 @@
       ctx.fillText(String(Math.round((min + max) / 2)), legendX + legendW / 2, legendY + LEGEND_H + 12);
     }
 
+    function renderPdfBtn(type, id) {
+      return `<div class="pdf-btn-wrap">
+        <button class="pdf-btn" onclick="generatePDF('${type}','${id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Download PDF Report
+        </button>
+      </div>`;
+    }
+
+    function canvasWithBg(src, bg) {
+      const tmp = document.createElement("canvas");
+      tmp.width = src.width; tmp.height = src.height;
+      const ctx = tmp.getContext("2d");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, tmp.width, tmp.height);
+      ctx.drawImage(src, 0, 0);
+      return tmp.toDataURL("image/png");
+    }
+
+    function generatePDF(type, id) {
+      if (!window.jspdf) { alert("PDF library not loaded yet. Please try again."); return; }
+      const { jsPDF } = window.jspdf;
+
+      let msg;
+      if (type === "chart")   msg = messages.find(m => m.chartId === id);
+      if (type === "heatmap") msg = messages.find(m => m.heatmapId === id);
+      if (type === "table")   msg = messages.find(m => m.tableId === id);
+      if (!msg) return;
+
+      const doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const margin = 18;
+      const contentW = pageW - margin * 2;
+      const now = new Date();
+
+      // ── Header bar ──
+      doc.setFillColor(210, 105, 30);
+      doc.rect(0, 0, pageW, 13, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(255, 255, 255);
+      doc.text("OaaS — Energy Data Report", margin, 9);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.text(now.toLocaleString(), pageW - margin, 9, { align: "right" });
+
+      let y = 20;
+
+      // ── Meta ──
+      if (selectedOrg) {
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.text("Organization: " + selectedOrg.name, margin, y);
+        y += 5;
+      }
+
+      // ── Context text ──
+      if (msg.text) {
+        doc.setFontSize(9);
+        doc.setTextColor(40, 40, 40);
+        const lines = doc.splitTextToSize(msg.text, contentW);
+        const cap = lines.slice(0, 5);
+        doc.text(cap, margin, y);
+        y += cap.length * 4.5 + 3;
+      }
+
+      // ── Divider ──
+      doc.setDrawColor(210, 105, 30);
+      doc.setLineWidth(0.4);
+      doc.line(margin, y, pageW - margin, y);
+      y += 6;
+
+      // ── Chart or heat map image ──
+      if ((type === "chart" || type === "heatmap") ) {
+        const canvasId = type === "chart" ? msg.chartId : msg.heatmapId;
+        const canvas = document.getElementById(canvasId);
+        if (canvas && canvas.width > 0) {
+          const imgData = canvasWithBg(canvas, "#f5f5f0");
+          const ratio = canvas.width / canvas.height;
+          const imgW = contentW;
+          const imgH = Math.min(imgW / ratio, 110);
+          doc.addImage(imgData, "PNG", margin, y, imgW, imgH);
+          y += imgH + 6;
+        }
+      }
+
+      // ── Table ──
+      if (type === "table" && msg.data) {
+        const cols = Object.keys(msg.data[0] || {});
+        doc.autoTable({
+          head: [cols.map(c => c.toUpperCase())],
+          body: msg.data.map(row => cols.map(c => String(row[c] ?? ""))),
+          startY: y,
+          margin: { left: margin, right: margin },
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [210, 105, 30], textColor: [255, 255, 255], fontStyle: "bold" },
+          alternateRowStyles: { fillColor: [245, 245, 240] },
+        });
+        y = doc.lastAutoTable.finalY + 6;
+      }
+
+      // ── Business insight ──
+      if (msg.insight) {
+        const insightLines = doc.splitTextToSize(msg.insight, contentW - 10);
+        const boxH = 8 + insightLines.length * 4.5;
+        doc.setFillColor(253, 246, 238);
+        doc.roundedRect(margin, y, contentW, boxH, 2, 2, "F");
+        doc.setDrawColor(210, 105, 30);
+        doc.setLineWidth(0.6);
+        doc.line(margin, y, margin, y + boxH);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7);
+        doc.setTextColor(210, 105, 30);
+        doc.text("BUSINESS INSIGHT", margin + 4, y + 5);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(50, 50, 50);
+        doc.text(insightLines, margin + 4, y + 9.5);
+        y += boxH + 6;
+      }
+
+      // ── Footer ──
+      doc.setFontSize(7);
+      doc.setTextColor(160, 160, 160);
+      doc.text("Generated by OaaS — Pivotol AI", margin, pageH - 8);
+      doc.text("pivotolai.com", pageW - margin, pageH - 8, { align: "right" });
+
+      doc.save("oaas-report-" + now.toISOString().slice(0, 10) + ".pdf");
+    }
+
     function initAllHeatMaps() {
       messages.forEach(msg => {
         if (!msg.heatmapData || !msg.heatmapId) return;
@@ -1054,6 +1211,7 @@
             assistantMsg.chartId = "chart-" + Date.now();
           } else if (data.responseType === "table" && Array.isArray(data.data) && data.data.length > 0) {
             assistantMsg.data = data.data;
+            assistantMsg.tableId = "table-" + Date.now();
           } else if (data.responseType === "heatmap" && data.heatmapData) {
             assistantMsg.heatmapData = data.heatmapData;
             assistantMsg.heatmapId = "heatmap-" + Date.now();
