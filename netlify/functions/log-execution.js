@@ -1,89 +1,83 @@
-const { getStore } = require("@netlify/blobs");
+// In-memory fallback for when Blobs context isn't available.
+// Module-level so it survives across requests within the same warm container.
+let memLogs = [];
 
 const MAX_LOGS = 200;
 const BLOB_KEY = "logs";
 const STORE_NAME = "oaas-debug-logs";
 
-exports.handler = async (event) => {
-  const headers = {
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
+const HEADERS = {
+  "Content-Type": "application/json",
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
 
-  if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 200, headers, body: "" };
-  }
+function ok(body) { return { statusCode: 200, headers: HEADERS, body: JSON.stringify(body) }; }
+function err(status, msg) { return { statusCode: status, headers: HEADERS, body: JSON.stringify({ error: msg }) }; }
 
-  let store;
+async function readLogs(store) {
+  if (!store) return [...memLogs];
   try {
+    const raw = await store.get(BLOB_KEY, { type: "json" });
+    return Array.isArray(raw) ? raw : [];
+  } catch {
+    return [...memLogs];
+  }
+}
+
+async function writeLogs(store, logs) {
+  memLogs = logs; // always keep in-memory copy as fallback
+  if (!store) return;
+  try { await store.set(BLOB_KEY, JSON.stringify(logs)); } catch {}
+}
+
+exports.handler = async (event) => {
+  if (event.httpMethod === "OPTIONS") return ok({});
+
+  // Try to get a Blobs store; degrade gracefully to in-memory if unavailable.
+  let store = null;
+  try {
+    const { getStore } = require("@netlify/blobs");
     store = getStore(STORE_NAME);
-  } catch (err) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: "Blob store unavailable: " + err.message }),
-    };
+  } catch {
+    // Blobs not available — in-memory fallback active
   }
 
-  // ── POST: append a log entry (or clear all) ──
+  // ── POST ──
   if (event.httpMethod === "POST") {
     let body;
-    try {
-      body = JSON.parse(event.body || "{}");
-    } catch {
-      return { statusCode: 400, headers, body: JSON.stringify({ error: "Invalid JSON body" }) };
-    }
+    try { body = JSON.parse(event.body || "{}"); }
+    catch { return err(400, "Invalid JSON body"); }
 
-    // Optional clear action
     if (body._clear === true) {
-      try { await store.set(BLOB_KEY, JSON.stringify([])); } catch {}
-      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, cleared: true }) };
+      memLogs = [];
+      if (store) { try { await store.set(BLOB_KEY, JSON.stringify([])); } catch {} }
+      return ok({ ok: true, cleared: true });
     }
 
     const entry = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      sessionId: String(body.sessionId || ""),
-      nodeName:  String(body.nodeName  || ""),
-      timestamp: String(body.timestamp || new Date().toISOString()),
-      data:      body.data ?? {},
+      sessionId:  String(body.sessionId  || ""),
+      nodeName:   String(body.nodeName   || ""),
+      timestamp:  String(body.timestamp  || new Date().toISOString()),
+      data:       body.data ?? {},
       receivedAt: new Date().toISOString(),
     };
 
-    let logs = [];
-    try {
-      const raw = await store.get(BLOB_KEY, { type: "json" });
-      logs = Array.isArray(raw) ? raw : [];
-    } catch { logs = []; }
+    const logs = [entry, ...(await readLogs(store))].slice(0, MAX_LOGS);
+    await writeLogs(store, logs);
 
-    logs = [entry, ...logs].slice(0, MAX_LOGS);
-
-    try {
-      await store.set(BLOB_KEY, JSON.stringify(logs));
-    } catch (err) {
-      return { statusCode: 500, headers, body: JSON.stringify({ error: "Write failed: " + err.message }) };
-    }
-
-    return { statusCode: 200, headers, body: JSON.stringify({ ok: true, id: entry.id }) };
+    return ok({ ok: true, id: entry.id, storage: store ? "blobs" : "memory" });
   }
 
-  // ── GET: return logs, optionally filtered by sessionId ──
+  // ── GET ──
   if (event.httpMethod === "GET") {
     const { sessionId } = event.queryStringParameters || {};
-
-    let logs = [];
-    try {
-      const raw = await store.get(BLOB_KEY, { type: "json" });
-      logs = Array.isArray(raw) ? raw : [];
-    } catch { logs = []; }
-
-    if (sessionId) {
-      logs = logs.filter(l => l.sessionId === sessionId);
-    }
-
-    return { statusCode: 200, headers, body: JSON.stringify(logs) };
+    let logs = await readLogs(store);
+    if (sessionId) logs = logs.filter(l => l.sessionId === sessionId);
+    return ok(logs);
   }
 
-  return { statusCode: 405, headers, body: JSON.stringify({ error: "Method not allowed" }) };
+  return err(405, "Method not allowed");
 };

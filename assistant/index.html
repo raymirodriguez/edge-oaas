@@ -1531,7 +1531,10 @@
       try {
         const url = DBG_API + (filter ? "?sessionId=" + encodeURIComponent(filter) : "");
         const res = await fetch(url);
-        if (!res.ok) throw new Error("HTTP " + res.status);
+        if (!res.ok) {
+          const body = await res.text().catch(() => "");
+          throw new Error("HTTP " + res.status + (body ? ": " + body.slice(0, 200) : ""));
+        }
         const logs = await res.json();
         if (!Array.isArray(logs) || logs.length === 0) {
           listEl.innerHTML = '<div style="color:#4a5a7a;padding:8px 0;">No log entries found.</div>';
