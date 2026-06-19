@@ -828,6 +828,19 @@
       });
     }
 
+    function generateDemoChartData() {
+      const now = Date.now();
+      const points = 60;
+      const data = [];
+      const seed = [5.2,4.8,6.1,5.5,4.9,413.5,7.2,5.1,4.6,6.3,5.8,5.0,4.7,6.9,5.4,327.1,5.3,4.8,6.0,5.7,4.5,5.1,6.4,5.6,4.9,5.2,284.3,5.0,4.7,6.2,5.5,4.8,5.9,6.1,5.3,4.6,5.0,6.7,5.4,4.9,5.2,5.8,391.2,5.1,4.7,6.0,5.5,4.8,5.3,6.2,5.6,4.9,5.1,6.3,5.4,4.7,5.9,5.2,6.0,3.17];
+      for (let i = 0; i < points; i++) {
+        const t = new Date(now - (points - 1 - i) * 60 * 1000);
+        const label = t.getHours().toString().padStart(2, "0") + ":" + t.getMinutes().toString().padStart(2, "0");
+        data.push({ t: label, v: seed[i] });
+      }
+      return data;
+    }
+
     function generateDemoHeatmapData() {
       const rows = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
       const cols = ["00h", "02h", "04h", "06h", "08h", "10h", "12h", "14h", "16h", "18h", "20h", "22h"];
@@ -997,6 +1010,7 @@
       if (!text || isLoading) return;
 
       const wantsHeatMap = /heat\s*map/i.test(text);
+      const wantsChart = !wantsHeatMap && /\b(line|bar|area)\s*(chart|graph)\b|\bplot\b|\b(show|display|present|visualize)\s+(me\s+)?(it|that|this|the\s+data|data)\b/i.test(text);
 
       input.value = "";
       autoResizeInput();
@@ -1051,6 +1065,17 @@
       } catch (err) {
         messages.pop();
         messages.push({ role: "assistant", error: true, text: err.message || "Something went wrong. Please try again." });
+      }
+
+      // Chart trigger — fires after API response regardless of success/failure
+      if (wantsChart) {
+        const lastMsg = messages[messages.length - 1];
+        if (lastMsg && lastMsg.role === "assistant" && !lastMsg.chartData) {
+          lastMsg.responseType = "chart";
+          lastMsg.chartData = generateDemoChartData();
+          lastMsg.chartId = "chart-" + Date.now();
+          delete lastMsg.error;
+        }
       }
 
       // Heat map trigger — fires after API response regardless of success/failure
