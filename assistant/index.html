@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OaaS Assistant</title>
+  <title>Edge Stream Operational Insights</title>
   <link rel="icon" href="/favicon.ico" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -77,13 +77,24 @@
       gap: 28px;
     }
     #loginLogo { height: 150px; width: auto; }
-    .login-title {
+    .login-product-name {
       font-family: var(--font-display);
-      font-size: 22px;
+      font-size: 18px;
       font-weight: 700;
-      letter-spacing: 0.02em;
-      color: var(--theme-text-primary);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--color-amber);
       text-align: center;
+      margin-top: -12px;
+    }
+    .login-title {
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      color: var(--theme-text-tertiary);
+      text-align: center;
+      text-transform: uppercase;
     }
     .login-form {
       width: 100%;
@@ -588,7 +599,8 @@
   <!-- ── Login Screen ── -->
   <div id="screen-login" class="screen">
     <div class="login-panel">
-      <img src="/oaas_logoblack.png" alt="OaaS" class="theme-logo" id="loginLogo" />
+      <img src="/edgestream_logoblack.png" alt="Edge Stream" class="theme-logo" id="loginLogo" />
+      <div class="login-product-name">Operational Insights</div>
       <div class="login-title">Sign in to continue</div>
       <div class="login-form">
         <input class="login-input" type="text" id="loginUser" placeholder="Username" autocomplete="username" />
@@ -602,7 +614,7 @@
   <!-- ── Org Selector Screen ── -->
   <div id="screen-org" class="screen">
     <div class="org-header">
-      <img src="/oaas_logoblack.png" alt="OaaS" class="theme-logo" id="orgLogo" />
+      <img src="/edgestream_logoblack.png" alt="Edge Stream" class="theme-logo" id="orgLogo" />
     </div>
     <div class="org-body">
       <div class="org-title">Select an organization to continue</div>
@@ -625,8 +637,8 @@
         </button>
       </div>
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="/oaas_logowhite.png" />
-        <img src="/oaas_logoblack.png" alt="OaaS" class="theme-logo" id="headerLogo" />
+        <source media="(prefers-color-scheme: dark)" srcset="/edgestream_logowhite.png" />
+        <img src="/edgestream_logoblack.png" alt="Edge Stream Operational Insights" class="theme-logo" id="headerLogo" />
       </picture>
       <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
         <svg id="moonIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -638,7 +650,7 @@
 
     <div class="input-area">
       <div class="input-row">
-        <textarea id="input" rows="1" placeholder="Ask OaaS something..." autocomplete="off"></textarea>
+        <textarea id="input" rows="1" placeholder="Ask ES-OI something..." autocomplete="off"></textarea>
         <button class="send-btn" id="sendBtn" onclick="sendMessage()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
@@ -655,7 +667,7 @@
   <!-- ── Debug Screen (visible only at ?debug) ── -->
   <div id="screen-debug" class="screen" style="min-height:100vh;min-height:100dvh;flex-direction:column;background:#0a0c12;color:#c8d8f0;font-family:'IBM Plex Mono',monospace;">
     <div style="flex-shrink:0;display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid #1a2030;background:#0d1018;">
-      <span style="color:#d2691e;font-size:13px;font-weight:bold;letter-spacing:0.05em;">OaaS — Debug Logs</span>
+      <span style="color:#d2691e;font-size:13px;font-weight:bold;letter-spacing:0.05em;">ES-OI — Debug Logs</span>
       <span style="color:#2a3a55;font-size:10px;">/.netlify/functions/log-execution</span>
       <a onclick="showScreen('screen-chat')" style="margin-left:auto;color:#3a5a8a;font-size:11px;text-decoration:none;cursor:pointer;">← back to chat</a>
     </div>
@@ -732,7 +744,7 @@
       document.getElementById("moonIcon").style.display = isDark ? "none" : "block";
       document.getElementById("sunIcon").style.display = isDark ? "block" : "none";
       document.querySelectorAll(".theme-logo").forEach(img => {
-        img.src = isDark ? "/oaas_logowhite.png" : "/oaas_logoblack.png";
+        img.src = isDark ? "/edgestream_logowhite.png" : "/edgestream_logoblack.png";
       });
     }
 
@@ -804,7 +816,7 @@
 
     function selectOrg(org) {
       selectedOrg = org;
-      messages = [{ role: "assistant", text: `Hi, I'm OaaS. You're now viewing ${org.name}. What would you like to know?` }];
+      messages = [{ role: "assistant", text: `Hi, I'm Edge Stream Operational Insights. You're now viewing ${org.name}. What would you like to know?` }];
       saveMessages();
       document.getElementById("sessionBadge").textContent = "session: " + sessionId.slice(0, 8);
       renderAll();
@@ -867,7 +879,7 @@
       const div = document.createElement("div");
       div.className = `msg ${msg.role}${(msg.chartData || msg.heatmapData || msg.data) ? " has-chart" : ""}`;
 
-      const label = msg.role === "user" ? "You" : "OaaS";
+      const label = msg.role === "user" ? "You" : "ES-OI";
       let bodyContent = "";
 
       if (msg.role === "user") {
@@ -1527,7 +1539,7 @@
 
     function clearChat() {
       const orgName = selectedOrg?.name || "your organization";
-      messages = [{ role: "assistant", text: `Hi, I'm OaaS. You're now viewing ${orgName}. What would you like to know?` }];
+      messages = [{ role: "assistant", text: `Hi, I'm Edge Stream Operational Insights. You're now viewing ${orgName}. What would you like to know?` }];
       saveMessages();
       renderAll();
     }
