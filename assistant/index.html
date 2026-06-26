@@ -543,6 +543,44 @@
     }
     .clear-btn:hover { border-color: #e05555; color: #e05555; }
     .session-btn:hover { border-color: var(--color-amber); color: var(--color-amber); }
+
+    /* ── Model selector ── */
+    .model-selector {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      margin-top: 7px;
+    }
+    .model-selector-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--theme-text-tertiary);
+      opacity: 0.5;
+      margin-right: 6px;
+    }
+    .model-toggle-btn {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      background: none;
+      color: var(--theme-text-tertiary);
+      transition: color .15s, border-color .15s, background-color .15s;
+    }
+    .model-toggle-btn.active {
+      color: var(--color-amber);
+      border-color: var(--color-amber);
+      background: rgba(210,105,30,0.08);
+    }
+    .model-toggle-btn:not(.active):hover {
+      color: var(--theme-text-secondary);
+      border-color: var(--theme-border);
+    }
   </style>
 </head>
 <body>
@@ -582,6 +620,9 @@
         <button class="session-btn" onclick="newSession()" title="New session (back to login)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         </button>
+        <button class="session-btn" onclick="showScreen('screen-debug');dbgFetch();" title="Debug logs">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        </button>
       </div>
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="/oaas_logowhite.png" />
@@ -602,6 +643,11 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>
+      <div class="model-selector">
+        <span class="model-selector-label">model</span>
+        <button class="model-toggle-btn active" id="btnClaude" onclick="setModel('anthropic')">Claude</button>
+        <button class="model-toggle-btn" id="btnGrok" onclick="setModel('grok')">Grok</button>
+      </div>
       <div class="session-badge" id="sessionBadge"></div>
     </div>
   </div>
@@ -611,7 +657,12 @@
     <div style="flex-shrink:0;display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid #1a2030;background:#0d1018;">
       <span style="color:#d2691e;font-size:13px;font-weight:bold;letter-spacing:0.05em;">OaaS — Debug Logs</span>
       <span style="color:#2a3a55;font-size:10px;">/.netlify/functions/log-execution</span>
-      <a href="/assistant" style="margin-left:auto;color:#3a5a8a;font-size:11px;text-decoration:none;">← back to chat</a>
+      <a onclick="showScreen('screen-chat')" style="margin-left:auto;color:#3a5a8a;font-size:11px;text-decoration:none;cursor:pointer;">← back to chat</a>
+    </div>
+    <div style="flex-shrink:0;display:flex;gap:8px;padding:8px 18px;border-bottom:1px solid #1a2030;background:#0d1018;flex-wrap:wrap;align-items:center;">
+      <span style="color:#3a4a6a;font-size:10px;white-space:nowrap;">admin token</span>
+      <input id="dbgAdminToken" type="password" placeholder="ADMIN_TOKEN env value"
+             style="flex:1;min-width:200px;font-family:'IBM Plex Mono',monospace;font-size:12px;background:#0a0c12;color:#c8d8f0;border:1px solid #2a3a55;border-radius:5px;padding:5px 10px;outline:none;" />
     </div>
     <div style="flex-shrink:0;display:flex;gap:8px;padding:10px 18px;border-bottom:1px solid #1a2030;background:#0d1018;flex-wrap:wrap;">
       <input id="dbgSessionFilter"
@@ -619,7 +670,8 @@
              style="flex:1;min-width:180px;font-family:'IBM Plex Mono',monospace;font-size:12px;background:#0a0c12;color:#c8d8f0;border:1px solid #1a2030;border-radius:5px;padding:6px 10px;outline:none;"
              onkeydown="if(event.key==='Enter')dbgFetch()" />
       <button onclick="dbgFetch()"    style="font-family:'IBM Plex Mono',monospace;font-size:11px;background:#d2691e;color:#fff;border:none;border-radius:5px;padding:6px 16px;cursor:pointer;letter-spacing:0.05em;">Refresh</button>
-      <button onclick="dbgClearAll()" style="font-family:'IBM Plex Mono',monospace;font-size:11px;background:transparent;color:#4a5a7a;border:1px solid #1a2030;border-radius:5px;padding:6px 16px;cursor:pointer;">Clear All</button>
+      <button onclick="dbgExport()"   style="font-family:'IBM Plex Mono',monospace;font-size:11px;background:transparent;color:#4a5a7a;border:1px solid #1a2030;border-radius:5px;padding:6px 16px;cursor:pointer;">Export .json</button>
+      <button onclick="dbgClearAll()" style="font-family:'IBM Plex Mono',monospace;font-size:11px;background:transparent;color:#4a5a7a;border:1px solid #1a2030;border-radius:5px;padding:6px 16px;cursor:pointer;">Clear Logs</button>
     </div>
     <div id="dbgList" style="flex:1;overflow-y:auto;padding:14px 18px;"></div>
     <div id="dbgStatus" style="flex-shrink:0;padding:6px 18px;font-size:10px;color:#3a4a6a;border-top:1px solid #1a2030;background:#0d1018;"></div>
@@ -634,6 +686,13 @@
     let isLoading = false;
     let credentials = null;   // { username, password }
     let selectedOrg = null;   // { id, name }
+    let modelProvider = "anthropic";
+
+    function setModel(provider) {
+      modelProvider = provider;
+      document.getElementById("btnClaude").classList.toggle("active", provider === "anthropic");
+      document.getElementById("btnGrok").classList.toggle("active", provider === "grok");
+    }
 
     // ── Session ID ──
     function getSessionId() {
@@ -704,7 +763,9 @@
         try { data = JSON.parse(raw); } catch { throw new Error("Invalid server response."); }
 
         if (data.success === false) {
-          errorEl.textContent = data.error || "Login failed. Check your credentials.";
+          let loginErr = data.error || "Login failed. Check your credentials.";
+          if (data.retryAfter) loginErr += ` (retry in ${Math.ceil(data.retryAfter / 60)} min)`;
+          errorEl.textContent = loginErr;
         } else {
           credentials = { username, password };
           renderOrgSelector(data.organizations || []);
@@ -762,9 +823,18 @@
       return d.innerHTML;
     }
 
+    function flattenTableRow(row) {
+      const flat = {};
+      if (row.timestamp != null) flat.timestamp = row.timestamp;
+      if (row.metrics && typeof row.metrics === "object") {
+        Object.assign(flat, row.metrics);
+      }
+      return flat;
+    }
+
     function renderData(data) {
       if (!Array.isArray(data) || data.length === 0) return "";
-      const cols = ["timestamp", "value", "metric"];
+      const cols = Object.keys(data[0]);
 
       let table = '<div class="data-table-wrap"><table class="data-table"><thead><tr>';
       cols.forEach(k => { table += `<th>${escapeHtml(k)}</th>`; });
@@ -835,6 +905,13 @@
       const gridColor = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
       const textColor = isDark ? "#aab2c5" : "#6a6a6a";
       const monoFont = { family: "'IBM Plex Mono', monospace", size: 10 };
+      const SERIES_COLORS = [
+        ["#d2691e", "rgba(210,105,30,0.12)"],
+        ["#4a8fe8", "rgba(74,143,232,0.12)"],
+        ["#2ec49e", "rgba(46,196,158,0.12)"],
+        ["#e84a8f", "rgba(232,74,143,0.12)"],
+        ["#c4c42e", "rgba(196,196,46,0.12)"],
+      ];
 
       messages.forEach(msg => {
         if (!msg.chartData || !msg.chartId) return;
@@ -842,27 +919,36 @@
         if (!canvas) return;
         if (chartInstances[msg.chartId]) chartInstances[msg.chartId].destroy();
 
+        const series = msg.chartSeries || [{ label: "", data: msg.chartData }];
+
         chartInstances[msg.chartId] = new Chart(canvas, {
           type: "line",
           data: {
-            labels: msg.chartData.map(d => d.t),
-            datasets: [{
-              data: msg.chartData.map(d => d.v),
-              borderColor: "#d2691e",
-              backgroundColor: "rgba(210,105,30,0.12)",
-              borderWidth: 2,
-              pointRadius: msg.chartData.length > 80 ? 0 : 3,
-              pointBackgroundColor: "#d2691e",
-              tension: 0.3,
-              fill: true,
-            }]
+            labels: series[0].data.map(d => d.t),
+            datasets: series.map((s, i) => {
+              const [line, fill] = SERIES_COLORS[i % SERIES_COLORS.length];
+              return {
+                label: s.label,
+                data: s.data.map(d => d.v),
+                borderColor: line,
+                backgroundColor: fill,
+                borderWidth: 2,
+                pointRadius: s.data.length > 80 ? 0 : 3,
+                pointBackgroundColor: line,
+                tension: 0.3,
+                fill: i === 0,
+              };
+            }),
           },
           options: {
             responsive: true,
             maintainAspectRatio: true,
             plugins: {
-              legend: { display: false },
-              tooltip: { callbacks: { label: ctx => String(ctx.parsed.y.toFixed(2)) } }
+              legend: {
+                display: true,
+                labels: { color: textColor, font: monoFont, boxWidth: 12, padding: 14 },
+              },
+              tooltip: { callbacks: { label: ctx => `${ctx.dataset.label ? ctx.dataset.label + ": " : ""}${ctx.parsed.y.toFixed(2)}` } },
             },
             scales: {
               x: { ticks: { color: textColor, maxTicksLimit: 8, maxRotation: 0, font: monoFont }, grid: { color: gridColor } },
@@ -873,33 +959,6 @@
       });
     }
 
-    function generateDemoChartData() {
-      const now = Date.now();
-      const points = 60;
-      const data = [];
-      const seed = [5.2,4.8,6.1,5.5,4.9,413.5,7.2,5.1,4.6,6.3,5.8,5.0,4.7,6.9,5.4,327.1,5.3,4.8,6.0,5.7,4.5,5.1,6.4,5.6,4.9,5.2,284.3,5.0,4.7,6.2,5.5,4.8,5.9,6.1,5.3,4.6,5.0,6.7,5.4,4.9,5.2,5.8,391.2,5.1,4.7,6.0,5.5,4.8,5.3,6.2,5.6,4.9,5.1,6.3,5.4,4.7,5.9,5.2,6.0,3.17];
-      for (let i = 0; i < points; i++) {
-        const t = new Date(now - (points - 1 - i) * 60 * 1000);
-        const label = t.getHours().toString().padStart(2, "0") + ":" + t.getMinutes().toString().padStart(2, "0");
-        data.push({ t: label, v: seed[i] });
-      }
-      return data;
-    }
-
-    function generateDemoHeatmapData() {
-      const rows = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-      const cols = ["00h", "02h", "04h", "06h", "08h", "10h", "12h", "14h", "16h", "18h", "20h", "22h"];
-      const values = [
-        [118, 108, 104, 112, 275, 418, 458, 472, 448, 376, 218, 158],
-        [122, 110, 106, 116, 283, 428, 466, 478, 453, 383, 223, 163],
-        [120, 107, 103, 113, 276, 413, 453, 468, 443, 373, 216, 156],
-        [123, 109, 107, 115, 281, 423, 460, 476, 450, 380, 220, 160],
-        [125, 112, 108, 118, 288, 438, 470, 483, 458, 388, 228, 168],
-        [ 93,  86,  81,  89, 138, 178, 198, 193, 173, 148, 128, 108],
-        [ 84,  77,  74,  81, 118, 153, 173, 166, 148, 128, 113,  97],
-      ];
-      return { rows, cols, values, label: "Energy Consumption (kW)" };
-    }
 
     function renderHeatMap(msg) {
       return `<div class="heatmap-section"><canvas id="${msg.heatmapId}"></canvas></div>`;
@@ -1051,7 +1110,7 @@
 
     function computeInsights(msg, type) {
       const RATE = 0.12;
-      const out = { stats: null, trend: null, anomalies: [], peakItems: [], costEstimate: null, recommendations: [] };
+      const out = { stats: null, trend: null, peakItems: [], costEstimate: null, recommendations: [] };
 
       if (type === "chart" && msg.chartData && msg.chartData.length > 0) {
         const vals = msg.chartData.map(d => d.v);
@@ -1072,15 +1131,11 @@
             : `Average load ${chg > 0 ? "increased" : "decreased"} ${Math.abs(Math.round(chg))}% from start to end of period.`,
         };
 
-        const threshold = mean + 2 * stdDev;
-        out.anomalies = msg.chartData.filter(d => d.v > threshold).map(d => `${d.t}: ${r1(d.v)} A`).slice(0, 6);
         out.peakItems = [...msg.chartData].sort((a, b) => b.v - a.v).slice(0, 3).map(d => `${d.t}  →  ${r1(d.v)} A`);
 
         const totalKwh = vals.reduce((s, v) => s + (480 * v / 1000) * (1 / 60), 0);
         out.costEstimate = { label: "Est. Energy (period)", kwh: r2(totalKwh), cost: r2(totalKwh * RATE), rate: RATE, note: "Assumes 480 V DC nominal" };
 
-        if (out.anomalies.length > 0)
-          out.recommendations.push(`${out.anomalies.length} load spike(s) detected above ${Math.round(threshold)} A — investigate equipment cycling at peak times.`);
         if (Math.abs(chg) > 5)
           out.recommendations.push(`Load is ${chg > 0 ? "increasing" : "decreasing"} — verify this aligns with the planned production schedule.`);
         if (stdDev / mean > 0.5)
@@ -1139,8 +1194,7 @@
       }
 
       if (type === "table" && msg.data && msg.data.length > 0) {
-        const numCol = Object.keys(msg.data[0]).find(k => k === "value") ||
-                       Object.keys(msg.data[0]).find(k => msg.data.some(r => !isNaN(parseFloat(r[k]))));
+        const numCol = Object.keys(msg.data[0]).find(k => k !== "timestamp" && !isNaN(parseFloat(msg.data[0][k])));
         if (numCol) {
           const vals = msg.data.map(r => parseFloat(r[numCol])).filter(v => !isNaN(v));
           const sorted = [...vals].sort((a, b) => a - b);
@@ -1282,7 +1336,7 @@
       }
 
       // ── Trend & Analysis ──
-      if (ins.trend || ins.anomalies.length > 0 || ins.peakItems.length > 0) {
+      if (ins.trend || ins.peakItems.length > 0) {
         y = secTitle("Trend & Analysis", y);
         if (ins.trend) {
           y = chk(y, 12);
@@ -1302,14 +1356,6 @@
           doc.text("Peak Periods:", M, y); y += 5;
           doc.setFont("helvetica", "normal"); doc.setTextColor(80, 80, 80);
           ins.peakItems.forEach(item => { doc.text("• " + item, M + 4, y); y += 4.5; });
-          y += 2;
-        }
-        if (ins.anomalies.length > 0) {
-          y = chk(y, ins.anomalies.length * 5 + 6);
-          doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(180, 55, 55);
-          doc.text("Anomalies Detected (" + ins.anomalies.length + "):", M, y); y += 5;
-          doc.setFont("helvetica", "normal"); doc.setTextColor(80, 80, 80);
-          ins.anomalies.forEach(a => { doc.text("! " + a, M + 4, y); y += 4.5; });
           y += 2;
         }
       }
@@ -1388,9 +1434,6 @@
       const text = input.value.trim();
       if (!text || isLoading) return;
 
-      const wantsHeatMap = /heat\s*map/i.test(text);
-      const wantsChart = !wantsHeatMap && /\b(line|bar|area)\s*(chart|graph)\b|\bplot\b|\b(show|display|present|visualize)\s+(me\s+)?(it|that|this|the\s+data|data)\b/i.test(text);
-
       input.value = "";
       autoResizeInput();
 
@@ -1409,30 +1452,55 @@
             sessionId,
             orgId: selectedOrg?.id,
             orgName: selectedOrg?.name,
+            modelProvider,
           }),
         });
 
         let data;
         const raw = await res.text();
-        try { data = JSON.parse(raw); } catch {
+        try {
+          const parsed = JSON.parse(raw);
+          data = Array.isArray(parsed) ? parsed[0] : parsed;
+        } catch {
           throw new Error("Invalid response from server.");
         }
 
         messages.pop();
 
         if (data.success === false) {
-          messages.push({ role: "assistant", error: true, text: data.error || "The query failed." });
+          let errText = data.error || "The query failed.";
+          if (data.retryAfter) errText += ` (retry in ${data.retryAfter}s)`;
+          messages.push({ role: "assistant", error: true, text: errText });
         } else {
           const answer = data.answer || data.output || raw;
           const assistantMsg = { role: "assistant", text: String(answer) };
           if (data.businessInsight) assistantMsg.insight = data.businessInsight;
           assistantMsg.responseType = data.responseType || "text";
 
-          if (data.responseType === "chart" && Array.isArray(data.chartData) && data.chartData.length > 0) {
-            assistantMsg.chartData = data.chartData;
+          if (data.responseType === "chart" && Array.isArray(data.data) && data.data.length > 0) {
+            // Build one series per (device_id × metricKey) pair, preserving insertion order
+            const seriesMap = new Map();
+            data.data.forEach(r => {
+              const dev = r.device_id || "";
+              if (!r.metrics) return;
+              Object.entries(r.metrics).forEach(([key, val]) => {
+                const sk = dev ? `${dev}\x00${key}` : key;
+                if (!seriesMap.has(sk)) seriesMap.set(sk, { dev, key, points: [] });
+                seriesMap.get(sk).points.push({ t: r.timestamp, v: val });
+              });
+            });
+            const distinctDevs    = [...new Set([...seriesMap.values()].map(s => s.dev).filter(Boolean))];
+            const distinctMetrics = [...new Set([...seriesMap.values()].map(s => s.key))];
+            const multiDev    = distinctDevs.length > 1;
+            const multiMetric = distinctMetrics.length > 1;
+            assistantMsg.chartSeries = [...seriesMap.values()].map(({ dev, key, points }) => ({
+              label: multiDev && multiMetric ? `${dev} — ${key}` : multiDev ? dev : key,
+              data: points,
+            }));
+            assistantMsg.chartData = assistantMsg.chartSeries[0]?.data ?? [];
             assistantMsg.chartId = "chart-" + Date.now();
           } else if (data.responseType === "table" && Array.isArray(data.data) && data.data.length > 0) {
-            assistantMsg.data = data.data;
+            assistantMsg.data = data.data.map(flattenTableRow);
             assistantMsg.tableId = "table-" + Date.now();
           } else if (data.responseType === "heatmap" && data.heatmapData) {
             assistantMsg.heatmapData = data.heatmapData;
@@ -1445,28 +1513,6 @@
       } catch (err) {
         messages.pop();
         messages.push({ role: "assistant", error: true, text: err.message || "Something went wrong. Please try again." });
-      }
-
-      // Chart trigger — fires after API response regardless of success/failure
-      if (wantsChart) {
-        const lastMsg = messages[messages.length - 1];
-        if (lastMsg && lastMsg.role === "assistant" && !lastMsg.chartData) {
-          lastMsg.responseType = "chart";
-          lastMsg.chartData = generateDemoChartData();
-          lastMsg.chartId = "chart-" + Date.now();
-          delete lastMsg.error;
-        }
-      }
-
-      // Heat map trigger — fires after API response regardless of success/failure
-      if (wantsHeatMap) {
-        const lastMsg = messages[messages.length - 1];
-        if (lastMsg && lastMsg.role === "assistant" && !lastMsg.heatmapData) {
-          lastMsg.responseType = "heatmap";
-          lastMsg.heatmapData = generateDemoHeatmapData();
-          lastMsg.heatmapId = "heatmap-" + Date.now();
-          delete lastMsg.error;
-        }
       }
 
       isLoading = false;
@@ -1523,6 +1569,11 @@
     // ── Debug panel ──
     const DBG_API = "/api/log-execution";
 
+    function dbgAuthHeaders(extra) {
+      const tok = (document.getElementById("dbgAdminToken") || {}).value || "";
+      return Object.assign(tok.trim() ? { "x-admin-token": tok.trim() } : {}, extra || {});
+    }
+
     async function dbgFetch() {
       const statusEl = document.getElementById("dbgStatus");
       const listEl   = document.getElementById("dbgList");
@@ -1530,8 +1581,9 @@
       statusEl.textContent = "Loading…";
       try {
         const url = DBG_API + (filter ? "?sessionId=" + encodeURIComponent(filter) : "");
-        const res = await fetch(url);
+        const res = await fetch(url, { headers: dbgAuthHeaders() });
         if (!res.ok) {
+          if (res.status === 401) throw new Error("401 Unauthorized — enter the ADMIN_TOKEN value above");
           const body = await res.text().catch(() => "");
           throw new Error("HTTP " + res.status + (body ? ": " + body.slice(0, 200) : ""));
         }
@@ -1557,10 +1609,39 @@
       }
     }
 
+    async function dbgExport() {
+      const statusEl = document.getElementById("dbgStatus");
+      const filter = document.getElementById("dbgSessionFilter").value.trim();
+      try {
+        const url = DBG_API + (filter ? "?sessionId=" + encodeURIComponent(filter) : "");
+        const res = await fetch(url, { headers: dbgAuthHeaders() });
+        if (!res.ok) {
+          if (res.status === 401) throw new Error("401 Unauthorized — enter admin token first");
+          throw new Error("HTTP " + res.status);
+        }
+        const logs = await res.json();
+        const blob = new Blob([JSON.stringify(logs, null, 2)], { type: "application/json" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "oaas-debug-logs-" + new Date().toISOString().slice(0, 19).replace(/[:.]/g, "-") + ".json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+        statusEl.textContent = "Exported " + (Array.isArray(logs) ? logs.length : 0) + " entries · " + new Date().toLocaleTimeString();
+      } catch (err) {
+        statusEl.textContent = "Export failed: " + err.message;
+      }
+    }
+
     async function dbgClearAll() {
       if (!confirm("Delete all stored debug logs?")) return;
       try {
-        await fetch(DBG_API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ _clear: true }) });
+        const clearRes = await fetch(DBG_API, { method: "POST", headers: dbgAuthHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ _clear: true }) });
+        if (!clearRes.ok) {
+          if (clearRes.status === 401) throw new Error("401 Unauthorized — enter admin token first");
+          throw new Error("HTTP " + clearRes.status);
+        }
         document.getElementById("dbgList").innerHTML = '<div style="color:#4a5a7a;">Logs cleared.</div>';
         document.getElementById("dbgStatus").textContent = "";
       } catch (err) {
@@ -1572,7 +1653,6 @@
     initTheme();
     if (new URLSearchParams(window.location.search).has("debug")) {
       showScreen("screen-debug");
-      dbgFetch();
     } else {
       showScreen("screen-login");
     }

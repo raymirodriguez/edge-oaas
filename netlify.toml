@@ -4,9 +4,12 @@
 [functions]
   directory = "netlify/functions"
 
+[functions.oaas-query]
+  timeout = 26  # Pro-plan hard ceiling for sync functions; beyond this requires a background/edge approach
+
 [[redirects]]
   from = "/api/oaas-query"
-  to = "https://brompton.app.n8n.cloud/webhook/oaas-query"
+  to = "/.netlify/functions/oaas-query"
   status = 200
   force = true
 
